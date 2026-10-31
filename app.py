@@ -507,10 +507,10 @@ ADMIN_DASHBOARD_TEMPLATE = """
         Master Control
       </span>
       <h2 style="font-size: 1.35rem; font-weight:800; margin-top:0.35rem; color:#78350f;">
-        📢 Global Association Broadcast (Sbhi T-Shirts pr ek sath)
+        Message Broadcast
       </h2>
       <p style="font-size:0.88rem; color:#92400e;">
-        Yeh message sabhi members ki T-shirt pr turant dikhega. Aap ise kabhi bhi badal ya band kar sakte hain.
+        Can be seen on every tshirt
       </p>
     </div>
 
@@ -550,11 +550,11 @@ ADMIN_DASHBOARD_TEMPLATE = """
         </select>
 
         <label style="display:block; font-weight:700; margin-bottom:0.4rem; font-size:0.9rem;">
-          ⏳ Scheduled Ending Time
+          Scheduled Ending Time
         </label>
         <input type="datetime-local" name="expires_at" value="{{ expiry_str }}" style="width:100%; padding:0.55rem; border-radius:6px; border:1px solid var(--border); margin-bottom:0.5rem; font-size:0.88rem;">
         <small style="display:block; color:#78350f; font-size:0.78rem; line-height:1.4;">
-          Jab yeh samay khatam hoga, sabhi T-shirts automatic apne member ke personal message pr laut aayengi!
+          After this timer!! Every tshirt will back to their normal quote
         </small>
 
         <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid #fde68a;">
@@ -568,7 +568,7 @@ ADMIN_DASHBOARD_TEMPLATE = """
 
     <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
       <button type="submit" class="btn btn-primary" style="background:#d97706; border-color:#b45309; padding:0.7rem 1.75rem;">
-        💾 Save & Push Broadcast Live
+        Save & Push Broadcast Live
       </button>
     </div>
   </form>
@@ -586,7 +586,7 @@ ADMIN_DASHBOARD_TEMPLATE = """
 
 {% if not tshirts %}
   <div class="card" style="text-align:center; padding: 3rem 1.5rem;">
-    <div style="font-size: 3rem; margin-bottom: 0.75rem;">👕</div>
+    <div style="font-size: 3rem; margin-bottom: 0.75rem;"></div>
     <h3>No Member T-Shirts registered yet</h3>
     <p style="color:var(--text-muted); margin: 0.5rem 0 1.25rem;">
       Add each member's details to generate their permanent print-ready QR code.
@@ -626,7 +626,7 @@ ADMIN_DASHBOARD_TEMPLATE = """
               </div>
               {% if shirt.member_phone %}
                 <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                  📞 {{ shirt.member_phone }}
+                   {{ shirt.member_phone }}
                 </div>
               {% endif %}
             </td>
@@ -698,7 +698,7 @@ ADMIN_EDIT_MEMBER_TEMPLATE = """
 
       <div style="margin-bottom: 1.25rem;">
         <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
-          Member's Personal Message (Uska khud ka alag message)
+          Member's Personal Message
         </label>
         <textarea name="member_message" rows="5" required placeholder="Write the member's bio, welcome message, or personal quote..." style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:inherit; line-height:1.5;">{{ tshirt.member_message if tshirt else 'Proud member of Jaipur Youth Association. Committed to social work and community welfare!' }}</textarea>
       </div>
@@ -777,9 +777,9 @@ PRINT_CARD_TEMPLATE = """
 </head>
 <body>
   <div class="no-print" style="text-align:center; margin-bottom:1.5rem;">
-    <button class="btn" onclick="window.print()">🖨️ Print This Garment Spec Sheet</button>
-    <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">📥 Download 300 DPI PNG</a>
-    <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">📐 Download Vector SVG</a>
+    <button class="btn" onclick="window.print()">Print This Garment Spec Sheet</button>
+    <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">Download 300 DPI PNG</a>
+    <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">Download Vector SVG</a>
   </div>
 
   <div class="print-sheet">
