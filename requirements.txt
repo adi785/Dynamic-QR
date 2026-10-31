@@ -1,0 +1,6 @@
+Flask 
+Flask-SQLAlchemy 
+"qrcode[pil]" 
+gunicorn 
+psycopg2-binary 
+markdown
