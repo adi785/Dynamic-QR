@@ -48,6 +48,14 @@ try:
 except ImportError:
     HAS_QRCODE = False
 
+# Barcode library with PIL and SVG writers
+try:
+    import barcode
+    from barcode.writer import ImageWriter, SVGWriter
+    HAS_BARCODE = True
+except ImportError:
+    HAS_BARCODE = False
+
 # Optional markdown rendering
 try:
     import markdown
@@ -602,7 +610,7 @@ ADMIN_DASHBOARD_TEMPLATE = """
             <th style="padding:1rem 1.25rem;">Member Details</th>
             <th style="padding:1rem 1.25rem;">Personal Message</th>
             <th style="padding:1rem 1.25rem; text-align:center;">Scans</th>
-            <th style="padding:1rem 1.25rem; text-align:center;">Print-Ready QR</th>
+            <th style="padding:1rem 1.25rem; text-align:center;">Print Codes (QR / Barcode)</th>
             <th style="padding:1rem 1.25rem; text-align:right;">Actions</th>
           </tr>
         </thead>
@@ -636,9 +644,14 @@ ADMIN_DASHBOARD_TEMPLATE = """
               </span>
             </td>
             <td style="padding:1.15rem 1.25rem; text-align:center;">
-              <a href="{{ url_for('qr_png', slug=shirt.slug) }}" target="_blank" title="View 300 DPI PNG">
-                <img src="{{ url_for('qr_png', slug=shirt.slug) }}" width="44" height="44" style="border:1px solid var(--border); border-radius:6px; vertical-align:middle;">
-              </a>
+              <div style="display:inline-flex; align-items:center; gap:0.5rem; justify-content:center;">
+                <a href="{{ url_for('qr_png', slug=shirt.slug) }}" target="_blank" title="View 300 DPI QR Code">
+                  <img src="{{ url_for('qr_png', slug=shirt.slug) }}" width="42" height="42" style="border:1px solid var(--border); border-radius:6px; vertical-align:middle;" alt="QR">
+                </a>
+                <a href="{{ url_for('barcode_png', slug=shirt.slug) }}" target="_blank" title="View Code 128 Barcode">
+                  <img src="{{ url_for('barcode_png', slug=shirt.slug) }}" height="42" style="border:1px solid var(--border); border-radius:6px; vertical-align:middle; max-width:76px; object-fit:contain; background:#fff; padding:2px;" alt="Barcode">
+                </a>
+              </div>
             </td>
             <td style="padding:1.15rem 1.25rem; text-align:right;">
               <div style="display:inline-flex; gap:0.35rem;">
@@ -757,52 +770,118 @@ PRINT_CARD_TEMPLATE = """
   <meta charset="UTF-8">
   <title>Apparel Print Sheet | {{ tshirt.member_name }}</title>
   <style>
-    @page { size: A4 portrait; margin: 1.5cm; }
+    @page { size: A4 portrait; margin: 1.2cm; }
     * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; padding: 2rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; padding: 2rem; background: #f8fafc; }
     .print-sheet {
-      max-width: 650px; margin: 0 auto; border: 2px dashed #94a3b8; border-radius: 16px; padding: 2.5rem; text-align: center;
+      max-width: 720px; margin: 0 auto; background: #ffffff; border: 2px dashed #94a3b8; border-radius: 16px; padding: 2.25rem; text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
     .header-badge {
       display: inline-block; background: #0f172a; color: white; padding: 0.35rem 1rem; border-radius: 999px;
-      font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem;
+      font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.85rem; letter-spacing: 0.5px;
     }
-    .qr-frame {
-      display: inline-block; padding: 1.25rem; background: #ffffff; border: 3px solid #0f172a; border-radius: 12px; margin: 1.25rem 0;
+    .codes-container {
+      display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin: 1.25rem 0; flex-wrap: wrap;
     }
-    .qr-frame img { display: block; width: 280px; height: 280px; }
-    .btn { display: inline-block; padding: 0.65rem 1.25rem; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; }
-    @media print { .no-print { display: none; } body { padding:0; } }
+    .code-box {
+      background: #ffffff; border: 2px solid #0f172a; border-radius: 12px; padding: 1.25rem; display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .code-box.hidden { display: none !important; }
+    .code-title {
+      font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-bottom: 0.75rem;
+    }
+    .qr-frame img { display: block; width: 220px; height: 220px; }
+    .barcode-frame img { display: block; max-width: 300px; height: auto; max-height: 130px; }
+    .btn { display: inline-block; padding: 0.55rem 1.1rem; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.85rem; }
+    .btn-secondary { background: #475569; }
+    .view-toggle-btn {
+      background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 0.45rem 0.95rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+    }
+    .view-toggle-btn.active {
+      background: #0f172a; color: #ffffff; border-color: #0f172a;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; background: #ffffff; }
+      .print-sheet { border: 2px dashed #64748b; box-shadow: none; padding: 1.2cm; max-width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <div class="no-print" style="text-align:center; margin-bottom:1.5rem;">
-    <button class="btn" onclick="window.print()">Print This Garment Spec Sheet</button>
-    <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">Download 300 DPI PNG</a>
-    <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">Download Vector SVG</a>
+  <div class="no-print" style="max-width:720px; margin:0 auto 1.5rem; text-align:center;">
+    <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+      <span style="font-weight:700; font-size:0.9rem; color:#475569; margin-right:0.5rem;">Select Code to Print:</span>
+      <button class="view-toggle-btn active" id="btn-both" onclick="setMode('both')">🔘 Both (QR + Barcode)</button>
+      <button class="view-toggle-btn" id="btn-qr" onclick="setMode('qr')">📱 QR Code Only</button>
+      <button class="view-toggle-btn" id="btn-barcode" onclick="setMode('barcode')">🏷️ Barcode Only</button>
+    </div>
+
+    <div style="display:flex; justify-content:center; gap:0.4rem; flex-wrap:wrap;">
+      <button class="btn" onclick="window.print()">🖨️ Print Spec Sheet</button>
+      <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">⬇️ QR (PNG)</a>
+      <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">⬇️ QR (Vector SVG)</a>
+      <a href="{{ url_for('barcode_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#4338ca;">⬇️ Barcode (PNG)</a>
+      <a href="{{ url_for('barcode_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#7c3aed;">⬇️ Barcode (Vector SVG)</a>
+    </div>
   </div>
 
   <div class="print-sheet">
     <div class="header-badge">Association Official Apparel Master</div>
-    <h1 style="font-size:1.85rem; font-weight:800;">{{ tshirt.member_name }}</h1>
-    <p style="color:#64748b; font-size:1rem; margin-top:0.25rem;">{{ tshirt.member_role }} &bull; Permanent T-Shirt QR</p>
+    <h1 style="font-size:1.85rem; font-weight:800; color:#0f172a;">{{ tshirt.member_name }}</h1>
+    <p style="color:#64748b; font-size:1rem; margin-top:0.25rem;">{{ tshirt.member_role }} &bull; Permanent Apparel Identification</p>
 
-    <div class="qr-frame">
-      <img src="{{ url_for('qr_png', slug=tshirt.slug, size=1000) }}" alt="QR Code">
+    <div class="codes-container" id="codes-wrap">
+      <div class="code-box qr-frame" id="box-qr">
+        <div class="code-title">2D Dynamic QR Code</div>
+        <img src="{{ url_for('qr_png', slug=tshirt.slug, size=1000) }}" alt="QR Code">
+      </div>
+
+      <div class="code-box barcode-frame" id="box-barcode">
+        <div class="code-title">1D Code 128 Barcode</div>
+        <img src="{{ url_for('barcode_png', slug=tshirt.slug) }}" alt="Barcode">
+      </div>
     </div>
 
     <div style="font-size:0.82rem; text-transform:uppercase; color:#64748b; font-weight:700;">Permanent Scan Target URL</div>
-    <div style="font-family:monospace; font-size:1.15rem; font-weight:700; color:#2563eb; background:#f1f5f9; padding:0.5rem 1rem; border-radius:8px; display:inline-block; margin:0.5rem 0 1.25rem;">
+    <div style="font-family:monospace; font-size:1.05rem; font-weight:700; color:#2563eb; background:#f1f5f9; padding:0.5rem 1rem; border-radius:8px; display:inline-block; margin:0.5rem 0 1.25rem; word-break:break-all;">
       {{ target_url }}
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.85rem;">
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
-      <div><strong>Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
-      <div><strong>Recommended Size:</strong> Min 2.0" × 2.0" (5cm × 5cm)</div>
-      <div><strong>Quiet Zone:</strong> 4 modules border included</div>
+      <div><strong>QR Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
+      <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
+      <div><strong>Quiet Zone:</strong> Safety margin included on both codes</div>
     </div>
   </div>
+
+  <script>
+    function setMode(mode) {
+      const qrBox = document.getElementById('box-qr');
+      const bcBox = document.getElementById('box-barcode');
+      const btnBoth = document.getElementById('btn-both');
+      const btnQr = document.getElementById('btn-qr');
+      const btnBc = document.getElementById('btn-barcode');
+
+      [btnBoth, btnQr, btnBc].forEach(b => b.classList.remove('active'));
+
+      if (mode === 'both') {
+        qrBox.classList.remove('hidden');
+        bcBox.classList.remove('hidden');
+        btnBoth.classList.add('active');
+      } else if (mode === 'qr') {
+        qrBox.classList.remove('hidden');
+        bcBox.classList.add('hidden');
+        btnQr.classList.add('active');
+      } else if (mode === 'barcode') {
+        qrBox.classList.add('hidden');
+        bcBox.classList.remove('hidden');
+        btnBc.classList.add('active');
+      }
+    }
+  </script>
 </body>
 </html>
 """
@@ -940,6 +1019,78 @@ def qr_svg(slug):
     resp = Response(buffer.getvalue(), mimetype="image/svg+xml")
     if download:
         resp.headers["Content-Disposition"] = f'attachment; filename="{tshirt.slug}-vector.svg"'
+    return resp
+
+
+@app.route("/t/<slug>/barcode.png")
+def barcode_png(slug):
+    tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
+    if not HAS_BARCODE:
+        return "python-barcode library missing. Please install python-barcode", 500
+
+    data_type = request.args.get("data", "url")
+    if data_type == "slug":
+        data_to_encode = tshirt.slug
+    else:
+        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+
+    try:
+        code_class = barcode.get_barcode_class("code128")
+        bc = code_class(data_to_encode, writer=ImageWriter())
+        buffer = io.BytesIO()
+        bc.write(buffer, options={
+            "module_width": 0.25,
+            "module_height": 14.0,
+            "font_size": 10,
+            "text_distance": 4.0,
+            "quiet_zone": 3.0,
+            "write_text": True,
+        })
+        buffer.seek(0)
+    except Exception as e:
+        return f"Failed to generate barcode: {str(e)}", 500
+
+    download = request.args.get("download", "0") == "1"
+    return send_file(
+        buffer,
+        mimetype="image/png",
+        as_attachment=download,
+        download_name=f"{tshirt.slug}-barcode.png",
+    )
+
+
+@app.route("/t/<slug>/barcode.svg")
+def barcode_svg(slug):
+    tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
+    if not HAS_BARCODE:
+        return "python-barcode library missing. Please install python-barcode", 500
+
+    data_type = request.args.get("data", "url")
+    if data_type == "slug":
+        data_to_encode = tshirt.slug
+    else:
+        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+
+    try:
+        code_class = barcode.get_barcode_class("code128")
+        bc = code_class(data_to_encode, writer=SVGWriter())
+        buffer = io.BytesIO()
+        bc.write(buffer, options={
+            "module_width": 0.25,
+            "module_height": 14.0,
+            "font_size": 10,
+            "text_distance": 4.0,
+            "quiet_zone": 3.0,
+            "write_text": True,
+        })
+        buffer.seek(0)
+    except Exception as e:
+        return f"Failed to generate barcode SVG: {str(e)}", 500
+
+    download = request.args.get("download", "0") == "1"
+    resp = Response(buffer.getvalue(), mimetype="image/svg+xml")
+    if download:
+        resp.headers["Content-Disposition"] = f'attachment; filename="{tshirt.slug}-barcode.svg"'
     return resp
 
 
