@@ -9,3 +9,5 @@ services:
         generateValue: true
       - key: ADMIN_PASSWORD
         value: admin123
+      - key: DATABASE_URL
+        sync: false
