@@ -253,6 +253,8 @@ BASE_LAYOUT = """
       border-radius: 8px;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
+      line-height: 1.25;
       text-decoration: none;
       border: 1px solid transparent;
       cursor: pointer;
@@ -691,12 +693,12 @@ ADMIN_DASHBOARD_TEMPLATE = """
               </div>
             </td>
             <td style="padding:1.15rem 1.25rem; text-align:right;">
-              <div style="display:inline-flex; gap:0.35rem;">
-                <a href="{{ url_for('scan_tshirt', slug=shirt.slug) }}" target="_blank" class="btn btn-secondary btn-sm" title="Preview Mobile Scan">👁️ View</a>
-                <a href="{{ url_for('admin_edit_tshirt', id=shirt.id) }}" class="btn btn-primary btn-sm" title="Edit Member Info">✏️ Edit</a>
-                <a href="{{ url_for('admin_print_card', id=shirt.id) }}" target="_blank" class="btn btn-secondary btn-sm" title="Print Shop Sheet">🖨️ Print Sheet</a>
-                <form action="{{ url_for('admin_delete_tshirt', id=shirt.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this member T-shirt?');">
-                  <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+              <div style="display:inline-flex; align-items:center; gap:0.4rem;">
+                <a href="{{ url_for('scan_tshirt', slug=shirt.slug) }}" target="_blank" class="btn btn-secondary btn-sm" title="Preview Mobile Scan">View</a>
+                <a href="{{ url_for('admin_edit_tshirt', id=shirt.id) }}" class="btn btn-primary btn-sm" title="Edit Member Info">Edit</a>
+                <a href="{{ url_for('admin_print_card', id=shirt.id) }}" target="_blank" class="btn btn-secondary btn-sm" title="Print Shop Sheet">Print Sheet</a>
+                <form action="{{ url_for('admin_delete_tshirt', id=shirt.id) }}" method="POST" style="display:inline-flex; margin:0;" onsubmit="return confirm('Are you sure you want to delete this member T-shirt?');">
+                  <button type="submit" class="btn btn-danger btn-sm" title="Delete Member">Delete</button>
                 </form>
               </div>
             </td>
@@ -787,12 +789,12 @@ ADMIN_EDIT_MEMBER_TEMPLATE = """
 
 ADMIN_LOGIN_TEMPLATE = """
 {% extends "base" %}
-{% block title %}Admin Sign In | Association T-Shirts{% endblock %}
+{% block title %}Admin Sign In | Makerspace T-Shirts{% endblock %}
 {% block content %}
 <div style="max-width: 400px; margin: 3rem auto;">
   <div class="card" style="text-align:center;">
-    <div style="font-size: 2.75rem; margin-bottom: 0.5rem;">👕🔐</div>
-    <h1 style="font-size: 1.45rem; font-weight:800; margin-bottom: 0.35rem;">Association Admin Login</h1>
+    <div style="font-size: 2.75rem; margin-bottom: 0.5rem;">JU Makerspace</div>
+    <h1 style="font-size: 1.45rem; font-weight:800; margin-bottom: 0.35rem;">Makerspace Admin Login</h1>
     <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom: 1.5rem;">
       Enter the administrative password to push live broadcasts and manage member T-shirts.
     </p>
@@ -839,7 +841,7 @@ PRINT_CARD_TEMPLATE = """
       font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-bottom: 0.75rem;
     }
     .qr-frame img { display: block; width: 220px; height: 220px; }
-    .barcode-frame img { display: block; max-width: 300px; height: auto; max-height: 130px; }
+    .barcode-frame img { display: block; max-width: 250px; height: auto; max-height: 130px; }
     .btn { display: inline-block; padding: 0.55rem 1.1rem; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.85rem; }
     .btn-secondary { background: #475569; }
     .view-toggle-btn {
@@ -858,18 +860,17 @@ PRINT_CARD_TEMPLATE = """
 <body>
   <div class="no-print" style="max-width:720px; margin:0 auto 1.5rem; text-align:center;">
     <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-      <span style="font-weight:700; font-size:0.9rem; color:#475569; margin-right:0.5rem;">Select Code to Print:</span>
-      <button class="view-toggle-btn active" id="btn-both" onclick="setMode('both')">🔘 Both (QR + Barcode)</button>
-      <button class="view-toggle-btn" id="btn-qr" onclick="setMode('qr')">📱 QR Code Only</button>
-      <button class="view-toggle-btn" id="btn-barcode" onclick="setMode('barcode')">🏷️ Barcode Only</button>
+      <button class="view-toggle-btn active" id="btn-both" onclick="setMode('both')">Both (QR + Barcode)</button>
+      <button class="view-toggle-btn" id="btn-qr" onclick="setMode('qr')">QR Code</button>
+      <button class="view-toggle-btn" id="btn-barcode" onclick="setMode('barcode')">Barcode</button>
     </div>
 
     <div style="display:flex; justify-content:center; gap:0.4rem; flex-wrap:wrap;">
-      <button class="btn" onclick="window.print()">🖨️ Print Spec Sheet</button>
-      <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">⬇️ QR (PNG)</a>
-      <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">⬇️ QR (Vector SVG)</a>
-      <a href="{{ url_for('barcode_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#4338ca;">⬇️ Barcode (PNG)</a>
-      <a href="{{ url_for('barcode_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#7c3aed;">⬇️ Barcode (Vector SVG)</a>
+      <button class="btn" onclick="window.print()">Print Spec Sheet</button>
+      <a href="{{ url_for('qr_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#0f172a;">QR (PNG)</a>
+      <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">QR (Vector SVG)</a>
+      <a href="{{ url_for('barcode_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#4338ca;">Barcode (PNG)</a>
+      <a href="{{ url_for('barcode_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#7c3aed;">Barcode (Vector SVG)</a>
     </div>
   </div>
 
