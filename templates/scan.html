@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>{{ tshirt.member_name }} | Association Member</title>
   <style>
     :root {
-      --accent: {{ tshirt.accent_color or '#2563eb' }};
+      --accent: {
+          {
+          tshirt.accent_color or '#2563eb'
+        }
+      }
+
+      ;
       --bg: #090d16;
       --card-bg: rgba(23, 30, 48, 0.9);
       --card-border: rgba(255, 255, 255, 0.1);
@@ -16,73 +23,76 @@
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scan.css') }}">
 </head>
+
 <body>
   <div class="wrapper">
 
     {# SCENARIO 1: Admin Takeover Mode (Admin message only) #}
     {% if show_broadcast and broadcast_mode == 'admin_only' %}
-      <div class="member-card" style="border: 2px solid #f59e0b; box-shadow: 0 0 40px rgba(245, 158, 11, 0.2);">
-        <div class="broadcast-badge">📢 Official Association Announcement</div>
-        <h1 style="font-size: 1.7rem; color: #fbbf24; margin-bottom: 1rem;">{{ broadcast.title }}</h1>
-        
-        <div class="message-box" style="background: rgba(120, 53, 15, 0.25); border-color: rgba(245, 158, 11, 0.3);">
-          {{ broadcast_msg_html|safe }}
-        </div>
+    <div class="member-card" style="border: 2px solid #f59e0b; box-shadow: 0 0 40px rgba(245, 158, 11, 0.2);">
+      <div class="broadcast-badge">📢 Official Association Announcement</div>
+      <h1 style="font-size: 1.7rem; color: #fbbf24; margin-bottom: 1rem;">{{ broadcast.title }}</h1>
 
-        {% if broadcast.expires_at %}
-          <div style="font-size: 0.8rem; color: #fde68a; margin-bottom: 1.5rem;">
-            ⏳ Active until: <strong>{{ broadcast.expires_at.strftime('%d %b %Y, %I:%M %p') }} UTC</strong>
-          </div>
-        {% endif %}
-
-        <div style="background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0.85rem; font-size: 0.85rem; color: var(--text-muted);">
-          👕 Scanned from <strong>{{ tshirt.member_name }}</strong>'s T-Shirt ({{ tshirt.member_role }})
-        </div>
+      <div class="message-box" style="background: rgba(120, 53, 15, 0.25); border-color: rgba(245, 158, 11, 0.3);">
+        {{ broadcast_msg_html|safe }}
       </div>
+
+      {% if broadcast.expires_at %}
+      <div style="font-size: 0.8rem; color: #fde68a; margin-bottom: 1.5rem;">
+        ⏳ Active until: <strong>{{ broadcast.expires_at.strftime('%d %b %Y, %I:%M %p') }} UTC</strong>
+      </div>
+      {% endif %}
+
+      <div
+        style="background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0.85rem; font-size: 0.85rem; color: var(--text-muted);">
+        👕 Scanned from <strong>{{ tshirt.member_name }}</strong>'s T-Shirt ({{ tshirt.member_role }})
+      </div>
+    </div>
 
     {# SCENARIO 2: Both Mode OR Member Only Mode #}
     {% else %}
-      
-      {# Show Broadcast Banner at Top if Active in 'both' mode #}
-      {% if show_broadcast and broadcast_mode == 'both' %}
-        <div class="broadcast-banner">
-          <div class="broadcast-badge">📢 Association Notice</div>
-          <div class="broadcast-title">{{ broadcast.title }}</div>
-          <div class="broadcast-body">{{ broadcast_msg_html|safe }}</div>
-          {% if broadcast.expires_at %}
-            <div class="broadcast-expiry">
-              <span>⏳</span>
-              <span>Notice active until {{ broadcast.expires_at.strftime('%d %b %Y, %I:%M %p') }} UTC</span>
-            </div>
-          {% endif %}
-        </div>
+
+    {# Show Broadcast Banner at Top if Active in 'both' mode #}
+    {% if show_broadcast and broadcast_mode == 'both' %}
+    <div class="broadcast-banner">
+      <div class="broadcast-badge">Association Notice</div>
+      <div class="broadcast-title">{{ broadcast.title }}</div>
+      <div class="broadcast-body">{{ broadcast_msg_html|safe }}</div>
+      {% if broadcast.expires_at %}
+      <div class="broadcast-expiry">
+        <span>⏳</span>
+        <span>Notice active until {{ broadcast.expires_at.strftime('%d %b %Y, %I:%M %p') }} UTC</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Member Personal Card #}
+    <div class="member-card">
+      <div class="avatar-circle">
+        {{ tshirt.member_name[0]|upper }}
+      </div>
+      <h1 class="member-name">{{ tshirt.member_name }}</h1>
+      <div class="member-role">{{ tshirt.member_role }}</div>
+
+      <div class="message-box">
+        {{ member_msg_html|safe }}
+      </div>
+
+      {% if tshirt.member_phone %}
+      <div style="margin-bottom: 1.25rem;">
+        <a href="tel:{{ tshirt.member_phone }}"
+          style="display:inline-block; padding:0.6rem 1.2rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.9rem;">
+          Call: {{ tshirt.member_phone }}
+        </a>
+      </div>
       {% endif %}
 
-      {# Member Personal Card #}
-      <div class="member-card">
-        <div class="avatar-circle">
-          {{ tshirt.member_name[0]|upper }}
-        </div>
-        <h1 class="member-name">{{ tshirt.member_name }}</h1>
-        <div class="member-role">{{ tshirt.member_role }}</div>
-
-        <div class="message-box">
-          {{ member_msg_html|safe }}
-        </div>
-
-        {% if tshirt.member_phone %}
-          <div style="margin-bottom: 1.25rem;">
-            <a href="tel:{{ tshirt.member_phone }}" style="display:inline-block; padding:0.6rem 1.2rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.9rem;">
-              📞 Call: {{ tshirt.member_phone }}
-            </a>
-          </div>
-        {% endif %}
-
-        <div class="meta-footer">
-          <span>● Verified Association Member</span>
-          <span>Scan #{{ tshirt.scan_count }}</span>
-        </div>
+      <div class="meta-footer">
+        <span>● Verified Association Member</span>
+        <span>Scan #{{ tshirt.scan_count }}</span>
       </div>
+    </div>
     {% endif %}
 
     <p style="text-align:center; margin-top:1.5rem; font-size:0.75rem; color:#64748b;">
@@ -90,4 +100,5 @@
     </p>
   </div>
 </body>
+
 </html>

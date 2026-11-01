@@ -521,8 +521,8 @@ with app.app_context():
         # Initialize default broadcast if not present
         if not GlobalBroadcast.query.first():
             broadcast = GlobalBroadcast(
-                title="Association Welcome & Community Drive",
-                message="Welcome! Scan any of our official association T-shirts to stay updated with our latest social initiatives and meetings.",
+                title="JU Makerspace",
+                message="Welcome! Scan any of our official Makerspace T-shirts to stay updated with our latest events, initiatives and meetings.",
                 mode="both",
                 is_active=True,
             )
@@ -536,12 +536,12 @@ with app.app_context():
         # Initialize demo member T-shirt if empty
         if not TShirt.query.first():
             demo_member = TShirt(
-                id="TSH0000001",
-                member_name="Rajesh Sharma",
-                member_role="Youth Coordinator",
-                slug="rajesh-2026",
-                member_message="Namaste! I lead youth engagement and volunteer activities for our association in Rajasthan. Connect with me anytime!",
-                member_phone="+91 98765 43210",
+                id="25BCON1655",
+                member_name="Aditya Falor",
+                member_role="Member",
+                slug="Mythical_Ace",
+                member_message="Committed to github!!",
+                member_phone="+91 9163487717",
                 accent_color="#2563eb",
             )
             db.session.add(demo_member)
