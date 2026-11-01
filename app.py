@@ -70,11 +70,29 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
-raw_db_url = os.environ.get("DATABASE_URL", "sqlite:///association_tshirts.db")
-if raw_db_url.startswith("postgres://"):
-    raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+def get_database_url():
+    candidates = [
+        "DATABASE_URL",
+        "DATABASE_URI",
+        "DB_URL",
+        "POSTGRES_URL",
+        "POSTGRESQL_URL",
+        "NEON_URL",
+        "NEON_DATABASE_URL",
+        "SQLALCHEMY_DATABASE_URI",
+    ]
+    # Check exact match or trimmed/case-insensitive match in os.environ
+    for key, val in os.environ.items():
+        if key.strip().upper() in candidates and val and val.strip():
+            url = val.strip().strip("'").strip('"')
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            return url, key.strip()
+    return "sqlite:///association_tshirts.db", "LOCAL_DEFAULT"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = raw_db_url
+db_url, db_env_source = get_database_url()
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["DB_ENV_SOURCE"] = db_env_source
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Public base domain/URL (crucial for encoding absolute URLs in printable QR codes)
@@ -1154,7 +1172,15 @@ def admin_dashboard():
 
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     is_postgres = "postgresql" in db_uri
-    db_backend = "Neon PostgreSQL" if "neon.tech" in db_uri else ("Cloud PostgreSQL" if is_postgres else "SQLite")
+    if is_postgres:
+        try:
+            import urllib.parse
+            parsed_host = urllib.parse.urlparse(db_uri).hostname or "cloud"
+        except Exception:
+            parsed_host = "cloud"
+        db_backend = f"Neon PostgreSQL ({parsed_host})" if "neon" in db_uri else f"Cloud PostgreSQL ({parsed_host})"
+    else:
+        db_backend = "SQLite (Local / Ephemeral)"
 
     return render_view(
         "admin_dashboard.html",
