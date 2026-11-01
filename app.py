@@ -96,6 +96,10 @@ db_url, db_env_source = get_database_url()
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["DB_ENV_SOURCE"] = db_env_source
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 
 # Public base domain/URL (crucial for encoding absolute URLs in printable QR codes)
 app.config["BASE_URL"] = (
@@ -1321,30 +1325,39 @@ def admin_print_card(id):
 # Database Bootstrap
 # -----------------------------------------------------------------------------
 with app.app_context():
-    db.create_all()
-    # Initialize default broadcast if not present
-    if not GlobalBroadcast.query.first():
-        broadcast = GlobalBroadcast(
-            title="Association Welcome & Community Drive",
-            message="Welcome! Scan any of our official association T-shirts to stay updated with our latest social initiatives and meetings.",
-            mode="both",
-            is_active=True,
-        )
-        db.session.add(broadcast)
+    try:
+        db.create_all()
+        # Initialize default broadcast if not present
+        if not GlobalBroadcast.query.first():
+            broadcast = GlobalBroadcast(
+                title="Association Welcome & Community Drive",
+                message="Welcome! Scan any of our official association T-shirts to stay updated with our latest social initiatives and meetings.",
+                mode="both",
+                is_active=True,
+            )
+            db.session.add(broadcast)
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"GlobalBroadcast bootstrap note: {e}", flush=True)
 
-    # Initialize demo member T-shirt if empty
-    if not TShirt.query.first():
-        demo_member = TShirt(
-            id="TSH0000001",
-            member_name="Rajesh Sharma",
-            member_role="Youth Coordinator",
-            slug="rajesh-2026",
-            member_message="Namaste! I lead youth engagement and volunteer activities for our association in Rajasthan. Connect with me anytime!",
-            member_phone="+91 98765 43210",
-            accent_color="#2563eb",
-        )
-        db.session.add(demo_member)
-    db.session.commit()
+    try:
+        # Initialize demo member T-shirt if empty
+        if not TShirt.query.first():
+            demo_member = TShirt(
+                id="TSH0000001",
+                member_name="Rajesh Sharma",
+                member_role="Youth Coordinator",
+                slug="rajesh-2026",
+                member_message="Namaste! I lead youth engagement and volunteer activities for our association in Rajasthan. Connect with me anytime!",
+                member_phone="+91 98765 43210",
+                accent_color="#2563eb",
+            )
+            db.session.add(demo_member)
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"TShirt bootstrap note: {e}", flush=True)
 
 
 if __name__ == "__main__":
