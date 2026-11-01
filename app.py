@@ -368,26 +368,12 @@ def admin_dashboard():
     is_live = broadcast.is_currently_live() if broadcast else False
     expiry_str = broadcast.expires_at.strftime("%Y-%m-%dT%H:%M") if (broadcast and broadcast.expires_at) else ""
 
-    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-    is_postgres = "postgresql" in db_uri or "postgres" in db_uri
-    if is_postgres:
-        try:
-            import urllib.parse
-            parsed_host = urllib.parse.urlparse(db_uri).hostname or "cloud"
-        except Exception:
-            parsed_host = "cloud"
-        db_backend = f"Neon PostgreSQL ({parsed_host})" if "neon" in db_uri else f"Cloud PostgreSQL ({parsed_host})"
-    else:
-        db_backend = "SQLite (Local / Ephemeral)"
-
     return render_template(
         "admin_dashboard.html",
         broadcast=broadcast,
         is_broadcast_live=is_live,
         expiry_str=expiry_str,
         tshirts=tshirts,
-        is_postgres=is_postgres,
-        db_backend=db_backend,
     )
 
 

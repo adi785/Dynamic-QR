@@ -3,12 +3,7 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.75rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
-      <h1 style="font-size: 1.85rem; font-weight:800; letter-spacing:-0.03em;">Association T-Shirt Control Center</h1>
-      <span style="font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; background: {{ '#dcfce7' if is_postgres else '#fee2e2' }}; color: {{ '#166534' if is_postgres else '#991b1b' }}; font-weight:700; border: 1px solid {{ '#86efac' if is_postgres else '#fca5a5' }};">
-        {{ '🟢 ' + db_backend if is_postgres else '⚠️ Local: SQLite (Not Cloud)' }}
-      </span>
-    </div>
+    <h1 style="font-size: 1.85rem; font-weight:800; letter-spacing:-0.03em;">Association T-Shirt Control Center</h1>
     <p style="color:var(--text-muted); font-size:0.95rem;">
       Manage your live broadcast announcements and individual members' permanent QR T-shirts.
     </p>
