@@ -79,12 +79,20 @@
         {{ member_msg_html|safe }}
       </div>
 
-      {% if tshirt.member_phone %}
-      <div style="margin-bottom: 1.25rem;">
+      {% if tshirt.member_phone or tshirt.member_email %}
+      <div style="display:flex; justify-content:center; gap:0.6rem; flex-wrap:wrap; margin-bottom: 1.25rem;">
+        {% if tshirt.member_phone %}
         <a href="tel:{{ tshirt.member_phone }}"
-          style="display:inline-block; padding:0.6rem 1.2rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.9rem;">
-          Call: {{ tshirt.member_phone }}
+          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.6rem 1.15rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.88rem; font-weight:600;">
+          📞 Call
         </a>
+        {% endif %}
+        {% if tshirt.member_email %}
+        <a href="mailto:{{ tshirt.member_email }}"
+          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.6rem 1.15rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.88rem; font-weight:600;">
+          ✉️ Mail
+        </a>
+        {% endif %}
       </div>
       {% endif %}
 
@@ -96,7 +104,7 @@
     {% endif %}
 
     <p style="text-align:center; margin-top:1.5rem; font-size:0.75rem; color:#64748b;">
-      Powered by Association 24/7 Dynamic T-Shirt QR
+      Build by Aditya Falor with ❤️ in JU Makerspace
     </p>
   </div>
 </body>

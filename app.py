@@ -416,6 +416,7 @@ def admin_new_tshirt():
         slug_raw = request.form.get("slug", "").strip()
         member_message = request.form.get("member_message", "").strip()
         member_phone = request.form.get("member_phone", "").strip()
+        member_email = request.form.get("member_email", "").strip()
         accent_color = request.form.get("accent_color", "#2563eb").strip()
 
         if not member_name:
@@ -447,6 +448,7 @@ def admin_new_tshirt():
             slug=slug,
             member_message=member_message or "Proud member of this association!",
             member_phone=member_phone or None,
+            member_email=member_email or None,
             accent_color=accent_color or "#2563eb",
         )
         db.session.add(new_shirt)
@@ -469,6 +471,7 @@ def admin_edit_tshirt(id):
         tshirt.member_role = request.form.get("member_role", tshirt.member_role).strip()
         tshirt.member_message = request.form.get("member_message", tshirt.member_message).strip()
         tshirt.member_phone = request.form.get("member_phone", "").strip() or None
+        tshirt.member_email = request.form.get("member_email", "").strip() or None
         tshirt.accent_color = request.form.get("accent_color", tshirt.accent_color).strip()
         tshirt.updated_at = datetime.utcnow()
 
@@ -504,6 +507,25 @@ def admin_print_card(id):
 with app.app_context():
     try:
         db.create_all()
+    except Exception as e:
+        print(f"db.create_all note: {e}", flush=True)
+
+    # Safe schema migration for newly added columns (works on PostgreSQL & SQLite)
+    try:
+        with db.engine.connect() as conn:
+            url_str = str(db.engine.url).lower()
+            if "postgresql" in url_str or "postgres" in url_str:
+                conn.execute(db.text("ALTER TABLE tshirts ADD COLUMN IF NOT EXISTS member_email VARCHAR(120)"))
+            else:
+                try:
+                    conn.execute(db.text("ALTER TABLE tshirts ADD COLUMN member_email VARCHAR(120)"))
+                except Exception:
+                    pass
+            conn.commit()
+    except Exception as e:
+        print(f"Column migration note: {e}", flush=True)
+
+    try:
         # Initialize default broadcast if not present
         if not GlobalBroadcast.query.first():
             broadcast = GlobalBroadcast(
@@ -528,6 +550,7 @@ with app.app_context():
                 slug="Mythical_Ace",
                 member_message="Committed to github!!",
                 member_phone="+91 9163487717",
+                member_email="adityafalor79@gmail.com",
                 accent_color="#2563eb",
             )
             db.session.add(demo_member)

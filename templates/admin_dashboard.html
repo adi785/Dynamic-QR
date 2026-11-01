@@ -138,9 +138,14 @@
               <div style="color:#334155; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                 {{ shirt.member_message }}
               </div>
-              {% if shirt.member_phone %}
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                   {{ shirt.member_phone }}
+              {% if shirt.member_phone or shirt.member_email %}
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:flex; flex-direction:column; gap:2px;">
+                  {% if shirt.member_phone %}
+                    <span>📞 {{ shirt.member_phone }}</span>
+                  {% endif %}
+                  {% if shirt.member_email %}
+                    <span>✉️ {{ shirt.member_email }}</span>
+                  {% endif %}
                 </div>
               {% endif %}
             </td>

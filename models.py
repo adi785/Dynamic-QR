@@ -61,6 +61,7 @@ class TShirt(db.Model):
     member_role = db.Column(db.String(100), default="Member", nullable=False)
     member_message = db.Column(db.Text, nullable=False, default="Proud member of this association. Scan my T-shirt anytime!")
     member_phone = db.Column(db.String(30), nullable=True)
+    member_email = db.Column(db.String(120), nullable=True)
     accent_color = db.Column(db.String(7), default="#2563eb", nullable=False)
     scan_count = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
