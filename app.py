@@ -505,7 +505,12 @@ ADMIN_DASHBOARD_TEMPLATE = """
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.75rem; flex-wrap:wrap; gap:1rem;">
   <div>
-    <h1 style="font-size: 1.85rem; font-weight:800; letter-spacing:-0.03em;">Association T-Shirt Control Center</h1>
+    <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+      <h1 style="font-size: 1.85rem; font-weight:800; letter-spacing:-0.03em;">Association T-Shirt Control Center</h1>
+      <span style="font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; background: {{ '#dcfce7' if is_postgres else '#fee2e2' }}; color: {{ '#166534' if is_postgres else '#991b1b' }}; font-weight:700; border: 1px solid {{ '#86efac' if is_postgres else '#fca5a5' }};">
+        {{ '🟢 ' + db_backend if is_postgres else '⚠️ Local: SQLite (Not Cloud)' }}
+      </span>
+    </div>
     <p style="color:var(--text-muted); font-size:0.95rem;">
       Manage your live broadcast announcements and individual members' permanent QR T-shirts.
     </p>
@@ -1147,12 +1152,18 @@ def admin_dashboard():
     is_live = broadcast.is_currently_live() if broadcast else False
     expiry_str = broadcast.expires_at.strftime("%Y-%m-%dT%H:%M") if (broadcast and broadcast.expires_at) else ""
 
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    is_postgres = "postgresql" in db_uri
+    db_backend = "Neon PostgreSQL" if "neon.tech" in db_uri else ("Cloud PostgreSQL" if is_postgres else "SQLite")
+
     return render_view(
         "admin_dashboard.html",
         broadcast=broadcast,
         is_broadcast_live=is_live,
         expiry_str=expiry_str,
         tshirts=tshirts,
+        is_postgres=is_postgres,
+        db_backend=db_backend,
     )
 
 
