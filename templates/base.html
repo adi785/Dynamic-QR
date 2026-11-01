@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>{% block title %}Association T-Shirt QR Manager{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {% if session.get('is_admin') %}
+  <header class="navbar">
+    <a href="{{ url_for('admin_dashboard') }}" class="navbar-brand">
+      <span>👕</span> Association QR Control
+    </a>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <a href="{{ url_for('admin_new_tshirt') }}" class="btn btn-primary btn-sm">+ Add Member T-Shirt</a>
+      <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-sm">Sign Out</a>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

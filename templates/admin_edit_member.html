@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Member' if tshirt else 'Add New Member' }} | Association QR{% endblock %}
+{% block content %}
+<div style="max-width: 650px; margin: auto;">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('admin_dashboard') }}" style="color:var(--text-muted); text-decoration:none; font-size:0.9rem;">&larr; Back to Control Center</a>
+    <h1 style="font-size: 1.75rem; font-weight:800; margin-top:0.4rem;">
+      {{ 'Edit Member T-Shirt Details' if tshirt else 'Register New Member T-Shirt' }}
+    </h1>
+    <p style="color:var(--text-muted); font-size:0.9rem;">
+      The generated QR and Barcode are permanent. You can edit this member's details anytime.
+    </p>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 1.25rem;">
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">Member Name</label>
+          <input type="text" name="member_name" required value="{{ tshirt.member_name if tshirt else '' }}" placeholder="e.g., Rajesh Sharma" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">Role / Designation</label>
+          <input type="text" name="member_role" value="{{ tshirt.member_role if tshirt else 'Core Member' }}" placeholder="e.g., Volunteer Coordinator" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem;">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 1.25rem;">
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
+            Member ID (Max 10 chars)
+            <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">({{ 'Permanent' if tshirt else 'Auto if blank' }})</span>
+          </label>
+          <input type="text" name="custom_id" maxlength="10" {{ 'readonly' if tshirt else '' }} value="{{ tshirt.id if tshirt else '' }}" placeholder="e.g. TSH0000001" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:monospace; text-transform:uppercase; background: {{ '#f8fafc' if tshirt else '#ffffff' }};">
+        </div>
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
+            Permanent QR Slug
+            <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(URL path)</span>
+          </label>
+          <input type="text" name="slug" {{ 'readonly' if tshirt else '' }} value="{{ tshirt.slug if tshirt else default_slug }}" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:monospace; background: {{ '#f8fafc' if tshirt else '#ffffff' }};">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
+          Member's Personal Message
+        </label>
+        <textarea name="member_message" rows="5" required placeholder="Write the member's bio, welcome message, or personal quote..." style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:inherit; line-height:1.5;">{{ tshirt.member_message if tshirt else 'Proud member of our association. Committed to social work and community welfare!' }}</textarea>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1rem; margin-bottom: 1.5rem;">
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">Contact Phone / WhatsApp (Optional)</label>
+          <input type="text" name="member_phone" value="{{ tshirt.member_phone if tshirt else '' }}" placeholder="+91 98765 43210" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">Profile Accent Color</label>
+          <input type="color" name="accent_color" value="{{ tshirt.accent_color if tshirt else '#2563eb' }}" style="width:100%; height:45px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          {{ 'Save Changes' if tshirt else 'Create T-Shirt & Generate Codes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

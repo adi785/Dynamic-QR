@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Admin Sign In | Association T-Shirts{% endblock %}
+{% block content %}
+<div style="max-width: 400px; margin: 3rem auto;">
+  <div class="card" style="text-align:center;">
+    <div style="font-size: 2.75rem; margin-bottom: 0.5rem;">👕🔐</div>
+    <h1 style="font-size: 1.45rem; font-weight:800; margin-bottom: 0.35rem;">Association Admin Login</h1>
+    <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom: 1.5rem;">
+      Enter the administrative password to push live broadcasts and manage member T-shirts.
+    </p>
+
+    <form method="POST">
+      <div style="margin-bottom: 1.25rem; text-align:left;">
+        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.88rem;">Admin Password</label>
+        <input type="password" name="password" required autofocus placeholder="Enter password..." style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem;">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem;">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
