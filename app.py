@@ -120,6 +120,14 @@ class GlobalBroadcast(db.Model):
         return True
 
 
+def generate_unique_tshirt_id():
+    """Generates a unique 10-character ID (e.g. 'TS' + 8 hex digits = 10 chars)."""
+    while True:
+        candidate = f"TS{secrets.token_hex(4).upper()}"
+        if not TShirt.query.get(candidate):
+            return candidate
+
+
 class TShirt(db.Model):
     """
     Individual T-shirt assigned to a specific association member.
@@ -127,7 +135,7 @@ class TShirt(db.Model):
     """
     __tablename__ = "tshirts"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(10), primary_key=True, default=generate_unique_tshirt_id)
     slug = db.Column(db.String(32), unique=True, nullable=False, index=True)
     member_name = db.Column(db.String(120), nullable=False)
     member_role = db.Column(db.String(100), default="Member", nullable=False)
@@ -625,7 +633,7 @@ ADMIN_DASHBOARD_TEMPLATE = """
                 {{ shirt.member_role }}
               </div>
               <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">
-                Slug: {{ shirt.slug }}
+                ID: <span style="color:#0f172a; font-weight:700;">{{ shirt.id }}</span> &bull; Slug: {{ shirt.slug }}
               </div>
             </td>
             <td style="padding:1.15rem 1.25rem; max-width:280px;">
@@ -701,12 +709,21 @@ ADMIN_EDIT_MEMBER_TEMPLATE = """
         </div>
       </div>
 
-      <div style="margin-bottom: 1.25rem;">
-        <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
-          Permanent QR Slug
-          <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(Encoded in printed physical QR code)</span>
-        </label>
-        <input type="text" name="slug" {{ 'readonly' if tshirt else '' }} value="{{ tshirt.slug if tshirt else default_slug }}" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:monospace; background: {{ '#f8fafc' if tshirt else '#ffffff' }};">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 1.25rem;">
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
+            Member ID (Max 10 chars)
+            <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">({{ 'Permanent' if tshirt else 'Auto if blank' }})</span>
+          </label>
+          <input type="text" name="custom_id" maxlength="10" {{ 'readonly' if tshirt else '' }} value="{{ tshirt.id if tshirt else '' }}" placeholder="e.g. TSH0000001" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:monospace; text-transform:uppercase; background: {{ '#f8fafc' if tshirt else '#ffffff' }};">
+        </div>
+        <div>
+          <label style="display:block; font-weight:700; margin-bottom:0.35rem; font-size:0.9rem;">
+            Permanent QR Slug
+            <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(URL path)</span>
+          </label>
+          <input type="text" name="slug" {{ 'readonly' if tshirt else '' }} value="{{ tshirt.slug if tshirt else default_slug }}" style="width:100%; padding:0.7rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; font-family:monospace; background: {{ '#f8fafc' if tshirt else '#ffffff' }};">
+        </div>
       </div>
 
       <div style="margin-bottom: 1.25rem;">
@@ -850,6 +867,7 @@ PRINT_CARD_TEMPLATE = """
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.85rem;">
+      <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
       <div><strong>QR Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
       <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
@@ -1190,7 +1208,20 @@ def admin_new_tshirt():
             flash(f"Slug '{slug}' is already taken. Please choose another.", "danger")
             return redirect(request.url)
 
+        custom_id = request.form.get("custom_id", "").strip().upper()
+        if custom_id:
+            if len(custom_id) > 10:
+                flash("Custom ID cannot exceed 10 characters.", "danger")
+                return redirect(request.url)
+            if TShirt.query.get(custom_id):
+                flash(f"ID '{custom_id}' is already taken. Please choose another.", "danger")
+                return redirect(request.url)
+            tshirt_id = custom_id
+        else:
+            tshirt_id = generate_unique_tshirt_id()
+
         new_shirt = TShirt(
+            id=tshirt_id,
             member_name=member_name,
             member_role=member_role,
             slug=slug,
@@ -1201,14 +1232,14 @@ def admin_new_tshirt():
         db.session.add(new_shirt)
         db.session.commit()
 
-        flash(f"T-shirt registered for {member_name}! Permanent QR code is ready for printing.", "success")
+        flash(f"T-shirt registered for {member_name} (ID: {tshirt_id})! Permanent QR & Barcode are ready for printing.", "success")
         return redirect(url_for("admin_dashboard"))
 
     default_slug = generate_unique_slug()
     return render_view("admin_edit_member.html", tshirt=None, default_slug=default_slug)
 
 
-@app.route("/admin/tshirts/<int:id>/edit", methods=["GET", "POST"])
+@app.route("/admin/tshirts/<id>/edit", methods=["GET", "POST"])
 @login_required
 def admin_edit_tshirt(id):
     tshirt = TShirt.query.get_or_404(id)
@@ -1228,7 +1259,7 @@ def admin_edit_tshirt(id):
     return render_view("admin_edit_member.html", tshirt=tshirt)
 
 
-@app.route("/admin/tshirts/<int:id>/delete", methods=["POST"])
+@app.route("/admin/tshirts/<id>/delete", methods=["POST"])
 @login_required
 def admin_delete_tshirt(id):
     tshirt = TShirt.query.get_or_404(id)
@@ -1239,7 +1270,7 @@ def admin_delete_tshirt(id):
     return redirect(url_for("admin_dashboard"))
 
 
-@app.route("/admin/tshirts/<int:id>/print-card")
+@app.route("/admin/tshirts/<id>/print-card")
 @login_required
 def admin_print_card(id):
     tshirt = TShirt.query.get_or_404(id)
@@ -1265,6 +1296,7 @@ with app.app_context():
     # Initialize demo member T-shirt if empty
     if not TShirt.query.first():
         demo_member = TShirt(
+            id="TSH0000001",
             member_name="Rajesh Sharma",
             member_role="Youth Coordinator",
             slug="rajesh-2026",
