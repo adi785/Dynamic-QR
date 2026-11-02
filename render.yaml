@@ -8,6 +8,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_PASSWORD
-        value: admin123
+        value: ********
       - key: DATABASE_URL
         sync: false
