@@ -267,22 +267,25 @@ def barcode_png(slug):
     if not HAS_BARCODE:
         return "python-barcode library missing. Please install python-barcode", 500
 
-    data_type = request.args.get("data", "url")
+    data_type = request.args.get("data", "id").lower()
     if data_type == "slug":
         data_to_encode = tshirt.slug
-    else:
+    elif data_type == "url":
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    else:
+        # Default to short member ID (or slug if ID is empty)
+        data_to_encode = tshirt.id or tshirt.slug
 
     try:
         code_class = barcode.get_barcode_class("code128")
         bc = code_class(data_to_encode, writer=ImageWriter())
         buffer = io.BytesIO()
         bc.write(buffer, options={
-            "module_width": 0.25,
-            "module_height": 14.0,
+            "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
+            "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
+            "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
             "font_size": 10,
-            "text_distance": 4.0,
-            "quiet_zone": 3.0,
+            "text_distance": 5.0,
             "write_text": True,
         })
         buffer.seek(0)
@@ -304,22 +307,25 @@ def barcode_svg(slug):
     if not HAS_BARCODE:
         return "python-barcode library missing. Please install python-barcode", 500
 
-    data_type = request.args.get("data", "url")
+    data_type = request.args.get("data", "id").lower()
     if data_type == "slug":
         data_to_encode = tshirt.slug
-    else:
+    elif data_type == "url":
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    else:
+        # Default to short member ID (or slug if ID is empty)
+        data_to_encode = tshirt.id or tshirt.slug
 
     try:
         code_class = barcode.get_barcode_class("code128")
         bc = code_class(data_to_encode, writer=SVGWriter())
         buffer = io.BytesIO()
         bc.write(buffer, options={
-            "module_width": 0.25,
-            "module_height": 14.0,
+            "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
+            "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
+            "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
             "font_size": 10,
-            "text_distance": 4.0,
-            "quiet_zone": 3.0,
+            "text_distance": 5.0,
             "write_text": True,
         })
         buffer.seek(0)
