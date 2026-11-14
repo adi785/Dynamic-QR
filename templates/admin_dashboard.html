@@ -124,9 +124,8 @@
           {% for shirt in tshirts %}
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:1.15rem 1.25rem;">
-              <div style="font-weight:700; color:var(--text); font-size:1.05rem; display:flex; align-items:center; gap:0.45rem;">
+              <div style="font-weight:700; color:var(--text); font-size:1.05rem;">
                 {{ shirt.member_name }}
-                <span title="Color: {{ shirt.accent_color }}" style="display:inline-block; width:11px; height:11px; border-radius:50%; background:{{ shirt.accent_color or '#2563eb' }}; border:1px solid rgba(0,0,0,0.15); flex-shrink:0;"></span>
               </div>
               <div style="font-size:0.82rem; color:var(--primary); font-weight:600;">
                 {{ shirt.member_role }}
