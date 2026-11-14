@@ -6,13 +6,16 @@
   <style>
     @page { size: A4 portrait; margin: 1.2cm; }
     * { box-sizing: border-box; margin:0; padding:0; }
+    :root {
+      --accent: {{ tshirt.accent_color or '#2563eb' }};
+    }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; padding: 2rem; background: #f8fafc; }
     .print-sheet {
-      max-width: 720px; margin: 0 auto; background: #ffffff; border: 2px dashed #94a3b8; border-radius: 16px; padding: 2.25rem; text-align: center;
+      max-width: 720px; margin: 0 auto; background: #ffffff; border: 2px dashed #94a3b8; border-top: 5px solid var(--accent); border-radius: 16px; padding: 2.25rem; text-align: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
     .header-badge {
-      display: inline-block; background: #0f172a; color: white; padding: 0.35rem 1rem; border-radius: 999px;
+      display: inline-block; background: var(--accent); color: white; padding: 0.35rem 1rem; border-radius: 999px;
       font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.85rem; letter-spacing: 0.5px;
     }
     .codes-container {
@@ -25,6 +28,13 @@
     .code-box.hidden { display: none !important; }
     .code-title {
       font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-bottom: 0.75rem;
+    }
+    .qr-frame {
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+    .qr-frame .code-title {
+      color: var(--accent);
     }
     .qr-frame img { display: block; width: 220px; height: 220px; max-width: 100%; transition: width 0.15s ease, height 0.15s ease; }
     .barcode-frame img { display: block; width: 340px; max-width: 100%; height: auto; }
@@ -41,10 +51,15 @@
     }
     .size-preset-btn:hover { background: #e2e8f0; }
     .size-preset-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    .color-preset-btn {
+      background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 0.3rem 0.65rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.78rem; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 0.35rem;
+    }
+    .color-preset-btn:hover { background: #e2e8f0; }
+    .color-preset-btn.active { background: #0f172a; color: #ffffff; border-color: #0f172a; }
     @media print {
       .no-print { display: none !important; }
       body { padding: 0; background: #ffffff; }
-      .print-sheet { border: 2px dashed #64748b; box-shadow: none; padding: 1.2cm; max-width: 100%; }
+      .print-sheet { border: 2px dashed #64748b; box-shadow: none; padding: 1.2cm; max-width: 100%; border-top: 5px solid var(--accent) !important; }
       .barcode-frame img { width: 90.7mm; height: auto; }
     }
   </style>
@@ -58,18 +73,27 @@
       <button class="view-toggle-btn" id="btn-barcode" onclick="setMode('barcode')">Barcode Only</button>
     </div>
 
-    <!-- QR Dimension Controls -->
+    <!-- QR Dimension & Color Controls -->
     <div id="qr-size-toolbar" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:0.85rem 1.25rem; margin-bottom:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.05); text-align:left;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <span style="font-size:0.85rem; font-weight:700; color:#334155; display:inline-flex; align-items:center; gap:0.4rem;">
-          📐 2D QR Code Dimensions:
+          📐 2D QR Code:
           <span id="qr-dimension-badge" style="background:#eff6ff; color:#1d4ed8; font-family:monospace; padding:0.15rem 0.55rem; border-radius:6px; border:1px solid #bfdbfe; font-weight:700;">220 × 220 px</span>
         </span>
-        <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
-          <button type="button" class="size-preset-btn" onclick="setQrSize(150)">150px (Pocket / Badge)</button>
-          <button type="button" class="size-preset-btn active" onclick="setQrSize(220)">220px (Standard)</button>
-          <button type="button" class="size-preset-btn" onclick="setQrSize(300)">300px (Chest Print)</button>
-          <button type="button" class="size-preset-btn" onclick="setQrSize(380)">380px (Back Large)</button>
+        <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="size-preset-btn" onclick="setQrSize(150)">150px</button>
+          <button type="button" class="size-preset-btn active" onclick="setQrSize(220)">220px</button>
+          <button type="button" class="size-preset-btn" onclick="setQrSize(300)">300px</button>
+          <button type="button" class="size-preset-btn" onclick="setQrSize(380)">380px</button>
+          <span style="border-left:1px solid #cbd5e1; height:18px; margin:0 0.35rem;"></span>
+          <button type="button" class="color-preset-btn active" id="btn-col-accent" onclick="setQrColor('accent')">
+            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent); border:1px solid rgba(0,0,0,0.2);"></span>
+            Chosen Color
+          </button>
+          <button type="button" class="color-preset-btn" id="btn-col-black" onclick="setQrColor('black')">
+            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#000000;"></span>
+            Black &amp; White
+          </button>
         </div>
       </div>
     </div>
@@ -78,7 +102,7 @@
     <div style="display:flex; justify-content:center; gap:0.4rem; flex-wrap:wrap;">
       <button class="btn" onclick="window.print()">🖨️ Print Spec Sheet</button>
       <a id="btn-dl-png" href="{{ url_for('qr_png', slug=tshirt.slug, download=1, size=1000) }}" class="btn" style="background:#0f172a;">QR (PNG)</a>
-      <a href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">QR (Vector SVG)</a>
+      <a id="btn-dl-svg" href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">QR (Vector SVG)</a>
       <a id="btn-dl-bc-png" href="{{ url_for('barcode_png', slug=tshirt.slug, download=1, data='id') }}" class="btn" style="background:#4338ca;">Barcode (PNG)</a>
       <a id="btn-dl-bc-svg" href="{{ url_for('barcode_svg', slug=tshirt.slug, download=1, data='id') }}" class="btn" style="background:#7c3aed;">Barcode (Vector SVG)</a>
     </div>
@@ -102,13 +126,14 @@
     </div>
 
     <div style="font-size:0.82rem; text-transform:uppercase; color:#64748b; font-weight:700;">Permanent Scan Target URL</div>
-    <div style="font-family:monospace; font-size:1.05rem; font-weight:700; color:#2563eb; background:#f1f5f9; padding:0.5rem 1rem; border-radius:8px; display:inline-block; margin:0.5rem 0 1.25rem; word-break:break-all;">
+    <div style="font-family:monospace; font-size:1.05rem; font-weight:700; color:var(--accent); background:#f1f5f9; padding:0.5rem 1rem; border-radius:8px; border:1px solid rgba(0,0,0,0.06); display:inline-block; margin:0.5rem 0 1.25rem; word-break:break-all;">
       {{ target_url }}
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.83rem; line-height:1.55;">
       <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
+      <div><strong>Profile Accent Color:</strong> <span style="display:inline-flex; align-items:center; gap:0.35rem; font-family:monospace; font-weight:700;"><span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:var(--accent); border:1px solid #94a3b8;"></span> {{ tshirt.accent_color or '#2563eb' }}</span></div>
       <div><strong>QR Print Dimension:</strong> <span id="qr-dimension-spec">220 × 220 px (~5.8 × 5.8 cm)</span></div>
       <div><strong>QR Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
       <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
@@ -116,7 +141,6 @@
       <div><strong>Barcode Bar Height:</strong> 28.0 mm (1.10 in crease/fold reading tolerance)</div>
       <div><strong>Barcode Bar Width (X-Dim):</strong> 0.55 mm (22 mils anti-bleed knit safe)</div>
       <div><strong>Barcode Quiet Zone:</strong> 8.5 mm (0.33 in solid margins on both ends)</div>
-      <div><strong>Barcode Data Encoded:</strong> Short string: <span id="barcode-data-label" style="font-family:monospace; font-weight:700; color:#4338ca;">{{ tshirt.id or tshirt.slug }}</span></div>
     </div>
   </div>
 
@@ -149,12 +173,52 @@
       }
     }
 
+    let currentQrSize = 220;
+    let currentQrColor = 'accent';
+    const memberAccentColor = "{{ tshirt.accent_color or '#2563eb' }}";
+
+    function updateQrUrls() {
+      const qrImg = document.getElementById('qr-img');
+      const dlPng = document.getElementById('btn-dl-png');
+      const dlSvg = document.getElementById('btn-dl-svg');
+
+      const colorVal = currentQrColor === 'black' ? 'black' : encodeURIComponent(memberAccentColor);
+      const dlSize = Math.max(800, currentQrSize * 3);
+
+      const baseUrlPng = "{{ url_for('qr_png', slug=tshirt.slug) }}";
+      const baseUrlSvg = "{{ url_for('qr_svg', slug=tshirt.slug) }}";
+
+      if (qrImg) {
+        qrImg.src = `${baseUrlPng}?size=1000&color=${colorVal}`;
+      }
+      if (dlPng) {
+        dlPng.href = `${baseUrlPng}?download=1&size=${dlSize}&color=${colorVal}`;
+      }
+      if (dlSvg) {
+        dlSvg.href = `${baseUrlSvg}?download=1&color=${colorVal}`;
+      }
+    }
+
+    function setQrColor(col) {
+      currentQrColor = col;
+      const btnAcc = document.getElementById('btn-col-accent');
+      const btnBlk = document.getElementById('btn-col-black');
+      if (col === 'black') {
+        if (btnBlk) btnBlk.classList.add('active');
+        if (btnAcc) btnAcc.classList.remove('active');
+      } else {
+        if (btnAcc) btnAcc.classList.add('active');
+        if (btnBlk) btnBlk.classList.remove('active');
+      }
+      updateQrUrls();
+    }
+
     function setQrSize(px) {
       px = parseInt(px, 10);
+      currentQrSize = px;
       const qrImg = document.getElementById('qr-img');
       const badge = document.getElementById('qr-dimension-badge');
       const spec = document.getElementById('qr-dimension-spec');
-      const dlBtn = document.getElementById('btn-dl-png');
 
       if (qrImg) {
         qrImg.style.width = px + 'px';
@@ -169,11 +233,7 @@
       if (badge) badge.innerText = dimensionText;
       if (spec) spec.innerText = specText;
 
-      if (dlBtn) {
-        const dlSize = Math.max(800, px * 3);
-        const baseUrl = "{{ url_for('qr_png', slug=tshirt.slug, download=1) }}";
-        dlBtn.href = `${baseUrl}&size=${dlSize}`;
-      }
+      updateQrUrls();
 
       // Update preset active style
       document.querySelectorAll('.size-preset-btn').forEach(btn => {
@@ -184,6 +244,9 @@
         }
       });
     }
+
+    // Initialize with member's accent color
+    updateQrUrls();
   </script>
 </body>
 </html>
