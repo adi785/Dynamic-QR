@@ -41,11 +41,6 @@
     }
     .size-preset-btn:hover { background: #e2e8f0; }
     .size-preset-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
-    .data-toggle-btn {
-      background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 0.3rem 0.65rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.78rem; transition: all 0.15s ease;
-    }
-    .data-toggle-btn:hover { background: #e2e8f0; }
-    .data-toggle-btn.active { background: #4338ca; color: #ffffff; border-color: #4338ca; }
     @media print {
       .no-print { display: none !important; }
       body { padding: 0; background: #ffffff; }
@@ -76,27 +71,6 @@
           <button type="button" class="size-preset-btn" onclick="setQrSize(300)">300px (Chest Print)</button>
           <button type="button" class="size-preset-btn" onclick="setQrSize(380)">380px (Back Large)</button>
         </div>
-      </div>
-    </div>
-
-    <!-- 1D Barcode Apparel Controls -->
-    <div id="barcode-size-toolbar" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:0.85rem 1.25rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.05); text-align:left;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-        <span style="font-size:0.85rem; font-weight:700; color:#334155; display:inline-flex; align-items:center; gap:0.4rem;">
-          📊 1D Barcode (Code 128) Apparel Spec:
-          <span style="background:#e0e7ff; color:#3730a3; font-family:monospace; padding:0.15rem 0.55rem; border-radius:6px; border:1px solid #c7d2fe; font-weight:700;">90.7 mm × 36.8 mm (3.57" × 1.45")</span>
-        </span>
-        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
-          <span style="font-size:0.78rem; font-weight:700; color:#475569;">Encode String:</span>
-          <button type="button" class="data-toggle-btn active" id="btn-data-id" onclick="setBarcodeData('id')">Member ID: {{ tshirt.id }} (Recommended)</button>
-          <button type="button" class="data-toggle-btn" id="btn-data-slug" onclick="setBarcodeData('slug')">Slug: {{ tshirt.slug }}</button>
-        </div>
-      </div>
-      <div style="margin-top:0.45rem; font-size:0.76rem; color:#64748b; display:flex; gap:1.25rem; flex-wrap:wrap;">
-        <span><strong>Width:</strong> 75–100 mm (Stretch-safe)</span>
-        <span><strong>Bar Height:</strong> 28.0 mm (Crease/fold read)</span>
-        <span><strong>X-Dim:</strong> 0.55 mm (Anti-bleed knit safe)</span>
-        <span><strong>Quiet Zone:</strong> 8.5 mm (Margins)</span>
       </div>
     </div>
 
@@ -151,7 +125,6 @@
       const qrBox = document.getElementById('box-qr');
       const bcBox = document.getElementById('box-barcode');
       const qrToolbar = document.getElementById('qr-size-toolbar');
-      const bcToolbar = document.getElementById('barcode-size-toolbar');
       const btnBoth = document.getElementById('btn-both');
       const btnQr = document.getElementById('btn-qr');
       const btnBc = document.getElementById('btn-barcode');
@@ -163,44 +136,16 @@
         bcBox.classList.remove('hidden');
         btnBoth.classList.add('active');
         if (qrToolbar) qrToolbar.style.display = 'block';
-        if (bcToolbar) bcToolbar.style.display = 'block';
       } else if (mode === 'qr') {
         qrBox.classList.remove('hidden');
         bcBox.classList.add('hidden');
         btnQr.classList.add('active');
         if (qrToolbar) qrToolbar.style.display = 'block';
-        if (bcToolbar) bcToolbar.style.display = 'none';
       } else if (mode === 'barcode') {
         qrBox.classList.add('hidden');
         bcBox.classList.remove('hidden');
         btnBc.classList.add('active');
         if (qrToolbar) qrToolbar.style.display = 'none';
-        if (bcToolbar) bcToolbar.style.display = 'block';
-      }
-    }
-
-    function setBarcodeData(type) {
-      const bcImg = document.getElementById('barcode-img');
-      const dlPng = document.getElementById('btn-dl-bc-png');
-      const dlSvg = document.getElementById('btn-dl-bc-svg');
-      const label = document.getElementById('barcode-data-label');
-      const btnId = document.getElementById('btn-data-id');
-      const btnSlug = document.getElementById('btn-data-slug');
-
-      [btnId, btnSlug].forEach(b => { if (b) b.classList.remove('active'); });
-
-      if (type === 'slug') {
-        if (btnSlug) btnSlug.classList.add('active');
-        if (bcImg) bcImg.src = "{{ url_for('barcode_png', slug=tshirt.slug) }}?data=slug";
-        if (dlPng) dlPng.href = "{{ url_for('barcode_png', slug=tshirt.slug, download=1) }}&data=slug";
-        if (dlSvg) dlSvg.href = "{{ url_for('barcode_svg', slug=tshirt.slug, download=1) }}&data=slug";
-        if (label) label.innerText = "{{ tshirt.slug }}";
-      } else {
-        if (btnId) btnId.classList.add('active');
-        if (bcImg) bcImg.src = "{{ url_for('barcode_png', slug=tshirt.slug) }}?data=id";
-        if (dlPng) dlPng.href = "{{ url_for('barcode_png', slug=tshirt.slug, download=1) }}&data=id";
-        if (dlSvg) dlSvg.href = "{{ url_for('barcode_svg', slug=tshirt.slug, download=1) }}&data=id";
-        if (label) label.innerText = "{{ tshirt.id }}";
       }
     }
 
