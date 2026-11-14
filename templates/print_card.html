@@ -97,7 +97,7 @@
   <div class="print-sheet">
     <div class="header-badge">Association Official Apparel Master</div>
     <h1 style="font-size:1.85rem; font-weight:800; color:#0f172a;">{{ tshirt.member_name }}</h1>
-    <p style="color:#64748b; font-size:1rem; margin-top:0.25rem;">{{ tshirt.member_role }} &bull; Permanent Apparel Identification</p>
+    <p style="color:#64748b; font-size:1rem; margin-top:0.25rem;">{{ tshirt.member_role }} &mdash; Permanent Apparel Identification</p>
 
     <div class="codes-container" id="codes-wrap">
       <div class="code-box qr-frame" id="box-qr">
@@ -119,7 +119,6 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.83rem; line-height:1.55;">
       <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
-      <div><strong>Profile Accent Color:</strong> <span style="display:inline-flex; align-items:center; gap:0.35rem; font-family:monospace; font-weight:700;"><span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:var(--accent); border:1px solid #94a3b8;"></span> {{ tshirt.accent_color or '#2563eb' }}</span></div>
       <div><strong>QR Print Dimension:</strong> <span id="qr-dimension-spec">220 × 220 px (~5.8 × 5.8 cm)</span></div>
       <div><strong>QR Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
       <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
