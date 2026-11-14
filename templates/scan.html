@@ -7,16 +7,12 @@
   <title>{{ tshirt.member_name }} | Association Member</title>
   <style>
     :root {
-      --accent: {
-          {
-          tshirt.accent_color or '#2563eb'
-        }
-      }
-
-      ;
+      --accent: {{ tshirt.accent_color or '#2563eb' }};
+      --accent-glow: {{ tshirt.accent_color or '#2563eb' }}4d;
+      --accent-subtle: {{ tshirt.accent_color or '#2563eb' }}1a;
       --bg: #090d16;
-      --card-bg: rgba(23, 30, 48, 0.9);
-      --card-border: rgba(255, 255, 255, 0.1);
+      --card-bg: rgba(23, 30, 48, 0.92);
+      --card-border: {{ tshirt.accent_color or '#2563eb' }}80;
       --text: #f8fafc;
       --text-muted: #94a3b8;
     }
@@ -73,9 +69,9 @@
         {{ tshirt.member_name[0]|upper }}
       </div>
       <h1 class="member-name">{{ tshirt.member_name }}</h1>
-      <div class="member-role">{{ tshirt.member_role }}</div>
+      <div class="member-role" style="color:var(--accent);">{{ tshirt.member_role }}</div>
 
-      <div class="message-box">
+      <div class="message-box" style="border-left: 3px solid var(--accent);">
         {{ member_msg_html|safe }}
       </div>
 
@@ -83,13 +79,13 @@
       <div style="display:flex; justify-content:center; gap:0.6rem; flex-wrap:wrap; margin-bottom: 1.25rem;">
         {% if tshirt.member_phone %}
         <a href="tel:{{ tshirt.member_phone }}"
-          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.6rem 1.15rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.88rem; font-weight:600;">
+          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.65rem 1.25rem; background:var(--accent); border:1px solid rgba(255,255,255,0.25); color:white; text-decoration:none; border-radius:12px; font-size:0.9rem; font-weight:700; box-shadow:0 4px 15px var(--accent-glow);">
           📞 Call
         </a>
         {% endif %}
         {% if tshirt.member_email %}
         <a href="mailto:{{ tshirt.member_email }}"
-          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.6rem 1.15rem; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:white; text-decoration:none; border-radius:10px; font-size:0.88rem; font-weight:600;">
+          style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.65rem 1.25rem; background:rgba(255,255,255,0.08); border:1px solid var(--accent); color:white; text-decoration:none; border-radius:12px; font-size:0.9rem; font-weight:700;">
           ✉️ Mail
         </a>
         {% endif %}
@@ -97,7 +93,10 @@
       {% endif %}
 
       <div class="meta-footer">
-        <span>● Verified Makerspace Member</span>
+        <span style="display:inline-flex; align-items:center; gap:0.35rem;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent);"></span>
+          Verified Makerspace Member
+        </span>
         <span>Scan #{{ tshirt.scan_count }}</span>
       </div>
     </div>
