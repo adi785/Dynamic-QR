@@ -212,13 +212,6 @@ def qr_png(slug):
     size_param = request.args.get("size", default=600, type=int)
     box_size = max(4, min(40, size_param // 30))
 
-    # Color support: defaults to member's selected accent color or requested color
-    requested_color = request.args.get("color")
-    if requested_color:
-        fill_color = "#000000" if requested_color.lower() == "black" else requested_color
-    else:
-        fill_color = tshirt.accent_color or "#2563eb"
-
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_H,  # 30% fabric damage recovery
@@ -228,10 +221,8 @@ def qr_png(slug):
     qr.add_data(target_url)
     qr.make(fit=True)
 
-    try:
-        img = qr.make_image(fill_color=fill_color, back_color="white")
-    except Exception:
-        img = qr.make_image(fill_color="black", back_color="white")
+    # Standard high-contrast black on white for reliable fabric scanning
+    img = qr.make_image(fill_color="black", back_color="white")
 
     buffer = io.BytesIO()
     img.save(buffer, format="PNG", dpi=(300, 300))
@@ -254,12 +245,6 @@ def qr_svg(slug):
     if not HAS_QRCODE:
         return "qrcode library missing. Please install qrcode[pil]", 500
 
-    requested_color = request.args.get("color")
-    if requested_color:
-        fill_color = "#000000" if requested_color.lower() == "black" else requested_color
-    else:
-        fill_color = tshirt.accent_color or "#2563eb"
-
     factory = qrcode.image.svg.SvgPathImage
     img = qrcode.make(
         target_url,
@@ -269,14 +254,10 @@ def qr_svg(slug):
     )
     buffer = io.BytesIO()
     img.save(buffer)
-    svg_str = buffer.getvalue().decode("utf-8")
-
-    # Inject chosen fill color into SVG path
-    if fill_color and fill_color.lower() not in ("#000000", "black"):
-        svg_str = svg_str.replace("<path ", f'<path fill="{fill_color}" ')
+    buffer.seek(0)
 
     download = request.args.get("download", "0") == "1"
-    resp = Response(svg_str, mimetype="image/svg+xml")
+    resp = Response(buffer.getvalue(), mimetype="image/svg+xml")
     if download:
         resp.headers["Content-Disposition"] = f'attachment; filename="{tshirt.slug}-vector.svg"'
     return resp
