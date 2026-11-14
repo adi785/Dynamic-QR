@@ -65,7 +65,7 @@
 
     <!-- QR Dimension Controls -->
     <div id="qr-size-toolbar" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:0.85rem 1.25rem; margin-bottom:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.05); text-align:left;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; gap:0.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <span style="font-size:0.85rem; font-weight:700; color:#334155; display:inline-flex; align-items:center; gap:0.4rem;">
           📐 2D QR Code Dimensions:
           <span id="qr-dimension-badge" style="background:#eff6ff; color:#1d4ed8; font-family:monospace; padding:0.15rem 0.55rem; border-radius:6px; border:1px solid #bfdbfe; font-weight:700;">220 × 220 px</span>
@@ -76,11 +76,6 @@
           <button type="button" class="size-preset-btn" onclick="setQrSize(300)">300px (Chest Print)</button>
           <button type="button" class="size-preset-btn" onclick="setQrSize(380)">380px (Back Large)</button>
         </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="font-size:0.75rem; color:#64748b; font-weight:600; min-width:40px;">100px</span>
-        <input type="range" id="qr-size-slider" min="100" max="450" step="10" value="220" oninput="onQrSliderChange(this.value)" style="flex:1; cursor:pointer; accent-color:#2563eb;">
-        <span style="font-size:0.75rem; color:#64748b; font-weight:600; min-width:40px; text-align:right;">450px</span>
       </div>
     </div>
 
@@ -212,7 +207,6 @@
     function setQrSize(px) {
       px = parseInt(px, 10);
       const qrImg = document.getElementById('qr-img');
-      const slider = document.getElementById('qr-size-slider');
       const badge = document.getElementById('qr-dimension-badge');
       const spec = document.getElementById('qr-dimension-spec');
       const dlBtn = document.getElementById('btn-dl-png');
@@ -221,7 +215,6 @@
         qrImg.style.width = px + 'px';
         qrImg.style.height = px + 'px';
       }
-      if (slider) slider.value = px;
 
       // Estimate approx printed cm (assuming standard 96 CSS DPI: 1 inch = 96px = 2.54cm => 1px ~ 0.02646cm)
       const approxCm = (px * 0.02646).toFixed(1);
@@ -245,10 +238,6 @@
           btn.classList.remove('active');
         }
       });
-    }
-
-    function onQrSliderChange(val) {
-      setQrSize(val);
     }
   </script>
 </body>
