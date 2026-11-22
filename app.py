@@ -28,6 +28,7 @@ from flask import (
     Response,
     abort,
     flash,
+    has_request_context,
     jsonify,
     redirect,
     render_template,
@@ -119,6 +120,20 @@ app.config["BASE_URL"] = (
     or "http://127.0.0.1:5000"
 ).rstrip("/")
 
+
+def get_base_url():
+    """Finds the effective public base URL, dynamically preferring request.host_url when available."""
+    if os.environ.get("BASE_URL"):
+        return os.environ.get("BASE_URL").rstrip("/")
+    if os.environ.get("RENDER_EXTERNAL_URL"):
+        return os.environ.get("RENDER_EXTERNAL_URL").rstrip("/")
+    try:
+        if has_request_context() and request.host_url:
+            return request.host_url.rstrip("/")
+    except Exception:
+        pass
+    return app.config.get("BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+
 # Admin dashboard password
 app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin123")
 
@@ -149,7 +164,7 @@ def render_markdown_or_safe_html(text):
 @app.context_processor
 def inject_globals():
     return {
-        "config_base_url": app.config["BASE_URL"],
+        "config_base_url": get_base_url(),
     }
 
 
@@ -207,7 +222,7 @@ def scan_tshirt(slug):
 @app.route("/t/<slug>/qr.png")
 def qr_png(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
-    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    target_url = f"{get_base_url()}/t/{tshirt.slug}"
 
     if not HAS_QRCODE:
         return "qrcode library missing. Please install qrcode[pil]", 500
@@ -247,7 +262,7 @@ def qr_png(slug):
 @app.route("/t/<slug>/qr.svg")
 def qr_svg(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
-    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    target_url = f"{get_base_url()}/t/{tshirt.slug}"
 
     if not HAS_QRCODE:
         return "qrcode library missing. Please install qrcode[pil]", 500
