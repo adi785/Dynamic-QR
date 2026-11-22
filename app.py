@@ -435,27 +435,76 @@ def barcode_png(slug):
         # Default: Link to their member details page
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
-    font_size = request.args.get("font_size", 36, type=int)
-
     try:
         code_class = barcode.get_barcode_class("code128")
         bc = code_class(data_to_encode, writer=ImageWriter())
         buffer = io.BytesIO()
+        # Render barcode bars without text overlapping
         bc.write(buffer, options={
-            "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
-            "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
-            "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
-            "font_size": font_size,    # 36pt font size stretches link text across full width of barcode
-            "text_distance": 6.0,
-            "write_text": True,
+            "module_width": 0.55,      # 0.55 mm
+            "module_height": 28.0,     # 28.0 mm
+            "quiet_zone": 8.5,         # 8.5 mm
+            "write_text": False,
         })
         buffer.seek(0)
+        im_bars = Image.open(buffer)
+        bw, bh = im_bars.size
+
+        # Find best TrueType font
+        font_path = None
+        for p in [
+            "C:/Windows/Fonts/segoeuib.ttf",
+            "C:/Windows/Fonts/arialbd.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        ]:
+            if os.path.exists(p):
+                font_path = p
+                break
+
+        draw_temp = ImageDraw.Draw(im_bars)
+        target_tw = bw * 0.88
+        best_font = None
+        best_tw = 0
+        best_th = 0
+
+        if font_path:
+            for fs in range(160, 20, -2):
+                f = ImageFont.truetype(font_path, fs)
+                bbox = draw_temp.textbbox((0, 0), data_to_encode, font=f)
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+                if tw <= target_tw:
+                    best_font = f
+                    best_tw = tw
+                    best_th = th
+                    break
+
+        if not best_font:
+            best_font = ImageFont.load_default()
+            best_tw, best_th = 400, 30
+
+        gap = max(35, int(best_th * 0.35))
+        bottom_pad = max(35, int(best_th * 0.35))
+        extra_h = gap + best_th + bottom_pad
+
+        canvas = Image.new("RGB", (bw, bh + extra_h), "white")
+        canvas.paste(im_bars, (0, 0))
+
+        draw = ImageDraw.Draw(canvas)
+        tx = (bw - best_tw) // 2
+        ty = bh + gap
+        draw.text((tx, ty), data_to_encode, fill="black", font=best_font)
+
+        out_buffer = io.BytesIO()
+        canvas.save(out_buffer, format="PNG", dpi=(300, 300))
+        out_buffer.seek(0)
     except Exception as e:
         return f"Failed to generate barcode: {str(e)}", 500
 
     download = request.args.get("download", "0") == "1"
     return send_file(
-        buffer,
+        out_buffer,
         mimetype="image/png",
         as_attachment=download,
         download_name=f"{tshirt.slug}-barcode.png",
@@ -477,18 +526,16 @@ def barcode_svg(slug):
         # Default: Link to their member details page
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
-    font_size = request.args.get("font_size", 36, type=int)
-
     try:
         code_class = barcode.get_barcode_class("code128")
         bc = code_class(data_to_encode, writer=SVGWriter())
         buffer = io.BytesIO()
         bc.write(buffer, options={
-            "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
-            "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
-            "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
-            "font_size": font_size,    # 36pt font size stretches link text across full width of barcode
-            "text_distance": 6.0,
+            "module_width": 0.55,      # 0.55 mm
+            "module_height": 28.0,     # 28.0 mm
+            "quiet_zone": 8.5,         # 8.5 mm
+            "font_size": 11,           # Clean proportional size in SVG coordinates
+            "text_distance": 5.0,
             "write_text": True,
         })
         buffer.seek(0)
