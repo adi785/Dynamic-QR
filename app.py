@@ -383,7 +383,7 @@ def tech_badge_png(slug):
     draw.line([(180, 15), (180, 160)], fill=(120, 120, 120, 255), width=2)
 
     # Cross-platform fonts
-    font_title = font_sub = font_link = font_cta = None
+    font_title = font_sub = font_cta = None
     for p in [
         "C:/Windows/Fonts/segoeuib.ttf",
         "C:/Windows/Fonts/arialbd.ttf",
@@ -392,22 +392,20 @@ def tech_badge_png(slug):
     ]:
         if os.path.exists(p):
             try:
-                font_title = ImageFont.truetype(p, 28)
-                font_sub = ImageFont.truetype(p, 20)
-                font_link = ImageFont.truetype(p, 24)
-                font_cta = ImageFont.truetype(p, 16)
+                font_title = ImageFont.truetype(p, 30)
+                font_sub = ImageFont.truetype(p, 22)
+                font_cta = ImageFont.truetype(p, 18)
                 break
             except Exception:
                 pass
     if not font_title:
-        font_title = font_sub = font_link = font_cta = ImageFont.load_default()
+        font_title = font_sub = font_cta = ImageFont.load_default()
 
-    draw.text((195, 14), "PAGE LINK:", fill=(148, 163, 184, 255), font=font_cta)
-    draw.text((195, 36), target_url, fill=(255, 255, 255, 255), font=font_link)
-    draw.text((195, 74), (tshirt.slug or "").replace("_", " ").upper(), fill=(203, 213, 225, 255), font=font_title)
+    draw.text((195, 20), tshirt.id or tshirt.slug, fill=(255, 255, 255, 255), font=font_title)
+    draw.text((195, 68), (tshirt.slug or "").replace("_", " ").upper(), fill=(180, 180, 180, 255), font=font_sub)
     accent = tshirt.accent_color or "#eb5f24"
-    draw.rounded_rectangle([195, 118, 420, 156], radius=6, fill=accent)
-    draw.text((215, 126), "SCAN PROFILE", fill=(255, 255, 255, 255), font=font_cta)
+    draw.rounded_rectangle([195, 115, 420, 155], radius=6, fill=accent)
+    draw.text((215, 123), "SCAN PROFILE", fill=(255, 255, 255, 255), font=font_cta)
 
     buffer = io.BytesIO()
     badge.save(buffer, format="PNG", dpi=(300, 300))
@@ -434,10 +432,10 @@ def barcode_png(slug):
     elif data_type == "id":
         data_to_encode = tshirt.id or tshirt.slug
     else:
-        # Default: Link to their member page
+        # Default: Link to their member details page
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
-    font_size = request.args.get("font_size", 18, type=int)
+    font_size = request.args.get("font_size", 36, type=int)
 
     try:
         code_class = barcode.get_barcode_class("code128")
@@ -447,8 +445,8 @@ def barcode_png(slug):
             "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
             "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
             "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
-            "font_size": font_size,    # Larger font size for clear link readability
-            "text_distance": 5.0,
+            "font_size": font_size,    # 36pt font size stretches link text across full width of barcode
+            "text_distance": 6.0,
             "write_text": True,
         })
         buffer.seek(0)
@@ -476,10 +474,10 @@ def barcode_svg(slug):
     elif data_type == "id":
         data_to_encode = tshirt.id or tshirt.slug
     else:
-        # Default: Link to their member page
+        # Default: Link to their member details page
         data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
-    font_size = request.args.get("font_size", 18, type=int)
+    font_size = request.args.get("font_size", 36, type=int)
 
     try:
         code_class = barcode.get_barcode_class("code128")
@@ -489,8 +487,8 @@ def barcode_svg(slug):
             "module_width": 0.55,      # 0.55 mm (X-dimension: 0.5 to 0.75 mm fabric tolerance)
             "module_height": 28.0,     # 28.0 mm (Bar height: 25 to 35 mm for crease/fold tolerance)
             "quiet_zone": 8.5,         # 8.5 mm (Margins: 8 to 10 mm on both ends)
-            "font_size": font_size,    # Larger font size for clear link readability
-            "text_distance": 5.0,
+            "font_size": font_size,    # 36pt font size stretches link text across full width of barcode
+            "text_distance": 6.0,
             "write_text": True,
         })
         buffer.seek(0)
