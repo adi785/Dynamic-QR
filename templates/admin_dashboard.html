@@ -91,10 +91,17 @@
 <!-- ========================================================================= -->
 <!-- SECTION 2: MEMBER T-SHIRT FLEET (PERMANENT QR & BARCODE CODES)           -->
 <!-- ========================================================================= -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-  <h2 style="font-size: 1.35rem; font-weight:800;">Member T-Shirts ({{ tshirts|length }})</h2>
-  <div style="font-size:0.85rem; color:var(--text-muted);">
-    Total Scans Recorded: <strong>{{ tshirts|sum(attribute='scan_count') }}</strong>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+  <div>
+    <h2 style="font-size: 1.35rem; font-weight:800; display:inline-block; margin-right:0.75rem;">Member T-Shirts ({{ tshirts|length }})</h2>
+    <span style="font-size:0.85rem; color:var(--text-muted);">
+      Total Scans Recorded: <strong>{{ tshirts|sum(attribute='scan_count') }}</strong>
+    </span>
+  </div>
+  <div>
+    <a href="{{ url_for('static', filename='all_member_qr_codes.zip') }}" class="btn" download style="background:#059669; color:#fff; text-decoration:none; font-size:0.85rem; font-weight:700; padding:0.45rem 0.95rem; border-radius:6px; display:inline-flex; align-items:center; gap:0.35rem;">
+      📦 Download All 165 QR Codes (.ZIP)
+    </a>
   </div>
 </div>
 

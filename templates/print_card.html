@@ -289,7 +289,7 @@
 
     <div
       style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.83rem; line-height:1.55;">
-      <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
+      <div><strong>Member ID:</strong> {{ tshirt.id if not tshirt.id.startswith('TS') else 'Not Assigned (Null)' }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
       <div><strong>Barcode Slot Width:</strong> 56 mm (2.2 in)</div>
       <div><strong>Optimal Phone Scan Distance:</strong> 1.5 – 2.5 meters (2D QR Code)</div>
