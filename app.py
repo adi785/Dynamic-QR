@@ -435,6 +435,83 @@ def tech_badge_png(slug):
     )
 
 
+def generate_barcode_image(data_to_encode, gap=18):
+    """
+    Renders a Code 128 barcode image with the full encoded link text
+    centered below the bars with a clean, tight gap (default 18px).
+    Returns a PIL Image object.
+    """
+    code_class = barcode.get_barcode_class("code128")
+    bc = code_class(data_to_encode, writer=ImageWriter())
+    buffer = io.BytesIO()
+    # Render barcode bars without text overlapping
+    bc.write(buffer, options={
+        "module_width": 0.55,      # 0.55 mm
+        "module_height": 28.0,     # 28.0 mm
+        "quiet_zone": 8.5,         # 8.5 mm
+        "write_text": False,
+    })
+    buffer.seek(0)
+    im_bars = Image.open(buffer)
+    bw, bh = im_bars.size
+
+    # Find best TrueType font
+    font_path = None
+    for p in [
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    ]:
+        if os.path.exists(p):
+            font_path = p
+            break
+
+    draw_temp = ImageDraw.Draw(im_bars)
+    target_tw = bw * 0.88
+    best_font = None
+    best_tw = 0
+    best_th = 0
+    best_bbox = (0, 0, 400, 30)
+
+    if font_path:
+        for fs in range(160, 20, -2):
+            f = ImageFont.truetype(font_path, fs)
+            bbox = draw_temp.textbbox((0, 0), data_to_encode, font=f)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            if tw <= target_tw:
+                best_font = f
+                best_tw = tw
+                best_th = th
+                best_bbox = bbox
+                break
+
+    if not best_font:
+        best_font = ImageFont.load_default()
+        best_tw, best_th = 400, 30
+        best_bbox = (0, 0, 400, 30)
+
+    # Locate exact lowest black bar pixel to set a clean, lowered gap
+    lowest_bar_y = bh
+    for y in range(bh - 1, -1, -1):
+        if any(im_bars.getpixel((x, y)) != (255, 255, 255) for x in range(bw)):
+            lowest_bar_y = y
+            break
+
+    ty = lowest_bar_y + gap - best_bbox[1]
+    bottom_pad = max(18, int(best_th * 0.2))
+    total_h = ty + best_bbox[3] + bottom_pad
+
+    canvas = Image.new("RGB", (bw, total_h), "white")
+    canvas.paste(im_bars, (0, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    tx = (bw - best_tw) // 2 - best_bbox[0]
+    draw.text((tx, ty), data_to_encode, fill="black", font=best_font)
+    return canvas
+
+
 @app.route("/t/<slug>/barcode.png")
 def barcode_png(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
@@ -451,77 +528,8 @@ def barcode_png(slug):
         data_to_encode = f"{get_base_url()}/t/{tshirt.slug}"
 
     try:
-        code_class = barcode.get_barcode_class("code128")
-        bc = code_class(data_to_encode, writer=ImageWriter())
-        buffer = io.BytesIO()
-        # Render barcode bars without text overlapping
-        bc.write(buffer, options={
-            "module_width": 0.55,      # 0.55 mm
-            "module_height": 28.0,     # 28.0 mm
-            "quiet_zone": 8.5,         # 8.5 mm
-            "write_text": False,
-        })
-        buffer.seek(0)
-        im_bars = Image.open(buffer)
-        bw, bh = im_bars.size
-
-        # Find best TrueType font
-        font_path = None
-        for p in [
-            "C:/Windows/Fonts/segoeuib.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-        ]:
-            if os.path.exists(p):
-                font_path = p
-                break
-
-        draw_temp = ImageDraw.Draw(im_bars)
-        target_tw = bw * 0.88
-        best_font = None
-        best_tw = 0
-        best_th = 0
-        best_bbox = (0, 0, 400, 30)
-
-        if font_path:
-            for fs in range(160, 20, -2):
-                f = ImageFont.truetype(font_path, fs)
-                bbox = draw_temp.textbbox((0, 0), data_to_encode, font=f)
-                tw = bbox[2] - bbox[0]
-                th = bbox[3] - bbox[1]
-                if tw <= target_tw:
-                    best_font = f
-                    best_tw = tw
-                    best_th = th
-                    best_bbox = bbox
-                    break
-
-        if not best_font:
-            best_font = ImageFont.load_default()
-            best_tw, best_th = 400, 30
-            best_bbox = (0, 0, 400, 30)
-
-        # Locate exact lowest black bar pixel to set a clean, lowered gap
-        lowest_bar_y = bh
-        for y in range(bh - 1, -1, -1):
-            if any(im_bars.getpixel((x, y)) != (255, 255, 255) for x in range(bw)):
-                lowest_bar_y = y
-                break
-
-        # Lowered, tight gap between barcode bars and text (default 18px)
         desired_gap = max(8, min(60, request.args.get("gap", 18, type=int)))
-        ty = lowest_bar_y + desired_gap - best_bbox[1]
-        bottom_pad = max(18, int(best_th * 0.2))
-        total_h = ty + best_bbox[3] + bottom_pad
-
-        canvas = Image.new("RGB", (bw, total_h), "white")
-        canvas.paste(im_bars, (0, 0))
-
-        draw = ImageDraw.Draw(canvas)
-        tx = (bw - best_tw) // 2 - best_bbox[0]
-        draw.text((tx, ty), data_to_encode, fill="black", font=best_font)
-
+        canvas = generate_barcode_image(data_to_encode, gap=desired_gap)
         out_buffer = io.BytesIO()
         canvas.save(out_buffer, format="PNG", dpi=(300, 300))
         out_buffer.seek(0)
@@ -783,6 +791,36 @@ def admin_download_all_qrs():
         mimetype="application/zip",
         as_attachment=True,
         download_name="all_member_qr_codes.zip",
+    )
+
+
+@app.route("/admin/download-all-barcodes")
+@login_required
+def admin_download_all_barcodes():
+    if not HAS_BARCODE:
+        return "python-barcode library missing. Please install python-barcode", 500
+
+    import zipfile
+    base_url = get_base_url()
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        for t in TShirt.query.order_by(TShirt.member_name).all():
+            target_url = f"{base_url}/t/{t.slug}"
+            try:
+                canvas = generate_barcode_image(target_url, gap=18)
+                img_io = io.BytesIO()
+                canvas.save(img_io, format="PNG", dpi=(300, 300))
+                img_io.seek(0)
+                z.writestr(f"{t.slug}_barcode.png", img_io.getvalue())
+            except Exception as e:
+                print(f"Error rendering barcode for {t.slug}: {e}")
+
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="all_member_barcodes.zip",
     )
 
 
