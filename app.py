@@ -214,6 +214,7 @@ def qr_png(slug):
 
     size_param = request.args.get("size", default=600, type=int)
     box_size = max(4, min(40, size_param // 30))
+    dark_mode = request.args.get("dark", "0") == "1" or request.args.get("invert", "0") == "1"
 
     qr = qrcode.QRCode(
         version=None,
@@ -224,19 +225,22 @@ def qr_png(slug):
     qr.add_data(target_url)
     qr.make(fit=True)
 
-    # Standard high-contrast black on white for reliable fabric scanning
-    img = qr.make_image(fill_color="black", back_color="white")
+    # Standard high-contrast black on white or inverted white on black for dark apparel
+    fill_col = "white" if dark_mode else "black"
+    back_col = "black" if dark_mode else "white"
+    img = qr.make_image(fill_color=fill_col, back_color=back_col)
 
     buffer = io.BytesIO()
     img.save(buffer, format="PNG", dpi=(300, 300))
     buffer.seek(0)
 
     download = request.args.get("download", "0") == "1"
+    suffix = "-dark" if dark_mode else ""
     return send_file(
         buffer,
         mimetype="image/png",
         as_attachment=download,
-        download_name=f"{tshirt.slug}-qr-300dpi.png",
+        download_name=f"{tshirt.slug}-qr{suffix}-300dpi.png",
     )
 
 
@@ -345,6 +349,74 @@ def badge_png(slug):
         mimetype="image/png",
         as_attachment=download,
         download_name=f"{tshirt.slug}-rectangular-badge-300dpi.png",
+    )
+
+
+@app.route("/t/<slug>/tech-badge.png")
+def tech_badge_png(slug):
+    tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
+    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+
+    if not HAS_QRCODE or not HAS_PIL:
+        return "qrcode or Pillow library missing", 500
+
+    # 3.44 : 1 aspect ratio matching the barcode spot (600 x 175 px @ 300 DPI)
+    width, height = 600, 175
+    transparent = request.args.get("transparent", "0") == "1"
+    bg_color = (0, 0, 0, 0) if transparent else (0, 0, 0, 255)
+    badge = Image.new("RGBA", (width, height), color=bg_color)
+    draw = ImageDraw.Draw(badge)
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=6,
+        border=1,
+    )
+    qr.add_data(target_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="white", back_color="black").convert("RGBA")
+    qr_img = qr_img.resize((155, 155), Image.Resampling.LANCZOS)
+    badge.paste(qr_img, (10, 10))
+
+    # Divider
+    draw.line([(180, 15), (180, 160)], fill=(120, 120, 120, 255), width=2)
+
+    # Cross-platform fonts
+    font_title = font_sub = font_cta = None
+    for p in [
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    ]:
+        if os.path.exists(p):
+            try:
+                font_title = ImageFont.truetype(p, 30)
+                font_sub = ImageFont.truetype(p, 22)
+                font_cta = ImageFont.truetype(p, 18)
+                break
+            except Exception:
+                pass
+    if not font_title:
+        font_title = font_sub = font_cta = ImageFont.load_default()
+
+    draw.text((195, 20), tshirt.id or tshirt.slug, fill=(255, 255, 255, 255), font=font_title)
+    draw.text((195, 68), (tshirt.slug or "").replace("_", " ").upper(), fill=(180, 180, 180, 255), font=font_sub)
+    accent = tshirt.accent_color or "#eb5f24"
+    draw.rounded_rectangle([195, 115, 420, 155], radius=6, fill=accent)
+    draw.text((215, 123), "SCAN PROFILE", fill=(255, 255, 255, 255), font=font_cta)
+
+    buffer = io.BytesIO()
+    badge.save(buffer, format="PNG", dpi=(300, 300))
+    buffer.seek(0)
+
+    download = request.args.get("download", "0") == "1"
+    return send_file(
+        buffer,
+        mimetype="image/png",
+        as_attachment=download,
+        download_name=f"{tshirt.slug}-tech-barcode-badge-300dpi.png",
     )
 
 
