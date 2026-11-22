@@ -222,6 +222,19 @@ def scan_tshirt(slug):
 @app.route("/t/<slug>/qr.png")
 def qr_png(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
+    dark_mode = request.args.get("dark", "0") == "1" or request.args.get("invert", "0") == "1"
+    download = request.args.get("download", "0") == "1"
+
+    # Fast disk cache check: 0ms response, zero CPU
+    cached_qr = os.path.join(app.root_path, "static", "qrcodes", f"{tshirt.slug}_qr.png")
+    if not dark_mode and os.path.exists(cached_qr):
+        return send_file(
+            cached_qr,
+            mimetype="image/png",
+            as_attachment=download,
+            download_name=f"{tshirt.slug}-qr-300dpi.png",
+        )
+
     target_url = f"{get_base_url()}/t/{tshirt.slug}"
 
     if not HAS_QRCODE:
@@ -229,7 +242,6 @@ def qr_png(slug):
 
     size_param = request.args.get("size", default=600, type=int)
     box_size = max(4, min(40, size_param // 30))
-    dark_mode = request.args.get("dark", "0") == "1" or request.args.get("invert", "0") == "1"
 
     qr = qrcode.QRCode(
         version=None,
@@ -249,7 +261,6 @@ def qr_png(slug):
     img.save(buffer, format="PNG", dpi=(300, 300))
     buffer.seek(0)
 
-    download = request.args.get("download", "0") == "1"
     suffix = "-dark" if dark_mode else ""
     return send_file(
         buffer,
@@ -519,6 +530,19 @@ def barcode_png(slug):
         return "python-barcode library missing. Please install python-barcode", 500
 
     data_type = request.args.get("data", "url").lower()
+    desired_gap = max(8, min(60, request.args.get("gap", 18, type=int)))
+    download = request.args.get("download", "0") == "1"
+
+    # Fast disk cache check: 0ms response, zero CPU overhead
+    cached_path = os.path.join(app.root_path, "static", "barcodes", f"{tshirt.slug}_barcode.png")
+    if (data_type == "url" or not request.args.get("data")) and desired_gap == 18 and os.path.exists(cached_path):
+        return send_file(
+            cached_path,
+            mimetype="image/png",
+            as_attachment=download,
+            download_name=f"{tshirt.slug}-barcode.png",
+        )
+
     if data_type == "slug":
         data_to_encode = tshirt.slug
     elif data_type == "id":
@@ -528,7 +552,6 @@ def barcode_png(slug):
         data_to_encode = f"{get_base_url()}/t/{tshirt.slug}"
 
     try:
-        desired_gap = max(8, min(60, request.args.get("gap", 18, type=int)))
         canvas = generate_barcode_image(data_to_encode, gap=desired_gap)
         out_buffer = io.BytesIO()
         canvas.save(out_buffer, format="PNG", dpi=(300, 300))
@@ -536,7 +559,6 @@ def barcode_png(slug):
     except Exception as e:
         return f"Failed to generate barcode: {str(e)}", 500
 
-    download = request.args.get("download", "0") == "1"
     return send_file(
         out_buffer,
         mimetype="image/png",
@@ -613,7 +635,25 @@ def admin_logout():
 @login_required
 def admin_dashboard():
     broadcast = GlobalBroadcast.query.first()
-    tshirts = TShirt.query.order_by(TShirt.created_at.desc()).all()
+    search_q = request.args.get("q", "").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 25  # Fast 25-member chunks for instant rendering on Render
+
+    base_query = TShirt.query
+    if search_q:
+        search_filter = f"%{search_q}%"
+        base_query = base_query.filter(
+            (TShirt.member_name.ilike(search_filter)) |
+            (TShirt.slug.ilike(search_filter)) |
+            (TShirt.id.ilike(search_filter))
+        )
+
+    pagination = base_query.order_by(TShirt.member_name.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    tshirts = pagination.items
+    total_members = TShirt.query.count()
+    total_scans = db.session.query(db.func.coalesce(db.func.sum(TShirt.scan_count), 0)).scalar()
 
     is_live = broadcast.is_currently_live() if broadcast else False
     expiry_str = broadcast.expires_at.strftime("%Y-%m-%dT%H:%M") if (broadcast and broadcast.expires_at) else ""
@@ -624,6 +664,10 @@ def admin_dashboard():
         is_broadcast_live=is_live,
         expiry_str=expiry_str,
         tshirts=tshirts,
+        pagination=pagination,
+        search_q=search_q,
+        total_members=total_members,
+        total_scans=total_scans,
     )
 
 
@@ -766,6 +810,16 @@ def admin_sync_roster():
 @app.route("/admin/download-all-qrs")
 @login_required
 def admin_download_all_qrs():
+    # If static zip exists, stream directly with 0ms CPU load
+    zip_path = os.path.join(app.root_path, "static", "all_member_qr_codes.zip")
+    if os.path.exists(zip_path):
+        return send_file(
+            zip_path,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="all_member_qr_codes.zip",
+        )
+
     import zipfile
     base_url = get_base_url()
     zip_buffer = io.BytesIO()
@@ -797,6 +851,16 @@ def admin_download_all_qrs():
 @app.route("/admin/download-all-barcodes")
 @login_required
 def admin_download_all_barcodes():
+    # If static zip exists, stream directly with 0ms CPU load
+    zip_path = os.path.join(app.root_path, "static", "all_member_barcodes.zip")
+    if os.path.exists(zip_path):
+        return send_file(
+            zip_path,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="all_member_barcodes.zip",
+        )
+
     if not HAS_BARCODE:
         return "python-barcode library missing. Please install python-barcode", 500
 

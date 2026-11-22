@@ -3,7 +3,7 @@ services:
     name: dynamic-qr-association
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --workers 2 --threads 4 --worker-class gthread --timeout 120
     envVars:
       - key: SECRET_KEY
         generateValue: true

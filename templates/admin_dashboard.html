@@ -93,9 +93,9 @@
 <!-- ========================================================================= -->
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
   <div>
-    <h2 style="font-size: 1.35rem; font-weight:800; display:inline-block; margin-right:0.75rem;">Member T-Shirts ({{ tshirts|length }})</h2>
+    <h2 style="font-size: 1.35rem; font-weight:800; display:inline-block; margin-right:0.75rem;">Member T-Shirts ({{ total_members }})</h2>
     <span style="font-size:0.85rem; color:var(--text-muted);">
-      Total Scans Recorded: <strong>{{ tshirts|sum(attribute='scan_count') }}</strong>
+      Total Scans Recorded: <strong>{{ total_scans }}</strong>
     </span>
   </div>
   <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
@@ -111,14 +111,34 @@
   </div>
 </div>
 
+<!-- Instant Member Search Bar -->
+<div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+  <form method="GET" action="{{ url_for('admin_dashboard') }}" style="display:flex; gap:0.4rem; align-items:center; flex:1; max-width:420px;">
+    <input type="text" name="q" value="{{ search_q }}" placeholder="🔍 Search member name, slug, or ID..." style="padding:0.45rem 0.85rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem; flex:1; outline:none; background:#fff;">
+    <button type="submit" class="btn btn-primary" style="padding:0.45rem 0.9rem; font-size:0.85rem;">Search</button>
+    {% if search_q %}
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.85rem; text-decoration:none;">Clear</a>
+    {% endif %}
+  </form>
+  <div style="font-size:0.85rem; color:var(--text-muted);">
+    Showing {{ tshirts|length }} of {{ pagination.total }} members
+  </div>
+</div>
+
 {% if not tshirts %}
   <div class="card" style="text-align:center; padding: 3rem 1.5rem;">
     <div style="font-size: 3rem; margin-bottom: 0.75rem;">👕</div>
-    <h3>No Member T-Shirts registered yet</h3>
+    <h3>No Member T-Shirts found</h3>
     <p style="color:var(--text-muted); margin: 0.5rem 0 1.25rem;">
-      Add each member's details to generate their permanent print-ready QR and Barcode.
+      {% if search_q %}
+        No members matched "{{ search_q }}". <a href="{{ url_for('admin_dashboard') }}">Show all members</a>.
+      {% else %}
+        Add each member's details or click "Sync Roster to DB" to seed the 165 members.
+      {% endif %}
     </p>
-    <a href="{{ url_for('admin_new_tshirt') }}" class="btn btn-primary">+ Register First Member T-Shirt</a>
+    {% if not search_q %}
+      <a href="{{ url_for('admin_new_tshirt') }}" class="btn btn-primary">+ Register First Member T-Shirt</a>
+    {% endif %}
   </div>
 {% else %}
   <div class="card" style="padding: 0; overflow:hidden;">
@@ -136,7 +156,7 @@
         <tbody>
           {% for shirt in tshirts %}
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:1.15rem 1.25rem;">
+            <td style="padding:1rem 1.25rem;">
               <div style="font-weight:700; color:var(--text); font-size:1.05rem;">
                 {{ shirt.member_name }}
               </div>
@@ -148,7 +168,7 @@
                 <div>Slug: {{ shirt.slug }}</div>
               </div>
             </td>
-            <td style="padding:1.15rem 1.25rem; max-width:280px;">
+            <td style="padding:1rem 1.25rem; max-width:280px;">
               <div style="color:#334155; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                 {{ shirt.member_message }}
               </div>
@@ -163,22 +183,22 @@
                 </div>
               {% endif %}
             </td>
-            <td style="padding:1.15rem 1.25rem; text-align:center;">
+            <td style="padding:1rem 1.25rem; text-align:center;">
               <span style="display:inline-block; background:#e0f2fe; color:#0369a1; padding:0.2rem 0.65rem; border-radius:999px; font-weight:700; font-size:0.85rem;">
                 {{ shirt.scan_count }}
               </span>
             </td>
-            <td style="padding:1.15rem 1.25rem; text-align:center;">
-              <div style="display:inline-flex; align-items:center; gap:0.5rem; justify-content:center;">
-                <a href="{{ url_for('qr_png', slug=shirt.slug) }}" target="_blank" title="View 300 DPI QR Code">
-                  <img src="{{ url_for('qr_png', slug=shirt.slug) }}" width="42" height="42" style="border:1px solid var(--border); border-radius:6px; vertical-align:middle;" alt="QR">
+            <td style="padding:1rem 1.25rem; text-align:center;">
+              <div style="display:inline-flex; align-items:center; gap:0.4rem; justify-content:center;">
+                <a href="{{ url_for('qr_png', slug=shirt.slug) }}" target="_blank" class="btn btn-sm" style="background:#0284c7; color:#fff; padding:0.3rem 0.65rem; font-size:0.78rem; text-decoration:none; border-radius:6px;" title="View 300 DPI QR Code">
+                  📱 QR ↗
                 </a>
-                <a href="{{ url_for('barcode_png', slug=shirt.slug) }}" target="_blank" title="View Code 128 Barcode">
-                  <img src="{{ url_for('barcode_png', slug=shirt.slug) }}" height="42" style="border:1px solid var(--border); border-radius:6px; vertical-align:middle; max-width:76px; object-fit:contain; background:#fff; padding:2px;" alt="Barcode">
+                <a href="{{ url_for('barcode_png', slug=shirt.slug) }}" target="_blank" class="btn btn-sm" style="background:#7c3aed; color:#fff; padding:0.3rem 0.65rem; font-size:0.78rem; text-decoration:none; border-radius:6px;" title="View Code 128 Barcode">
+                  🏷️ Barcode ↗
                 </a>
               </div>
             </td>
-            <td style="padding:1.15rem 1.25rem; text-align:right;">
+            <td style="padding:1rem 1.25rem; text-align:right;">
               <div style="display:inline-flex; align-items:center; gap:0.4rem;">
                 <a href="{{ url_for('scan_tshirt', slug=shirt.slug) }}" target="_blank" class="btn btn-secondary btn-sm" title="Preview Mobile Scan">View</a>
                 <a href="{{ url_for('admin_edit_tshirt', id=shirt.id) }}" class="btn btn-primary btn-sm" title="Edit Member Info">Edit</a>
@@ -193,6 +213,32 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="display:flex; justify-content:center; align-items:center; gap:0.35rem; padding:1.25rem 1rem; border-top:1px solid var(--border); background:#f8fafc; flex-wrap:wrap;">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('admin_dashboard', page=pagination.prev_num, q=search_q) }}" class="btn btn-secondary btn-sm" style="padding:0.35rem 0.75rem;">&laquo; Prev</a>
+      {% endif %}
+      {% for p in pagination.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+        {% if p %}
+          {% if p == pagination.page %}
+            <span style="background:var(--primary); color:#fff; padding:0.35rem 0.75rem; border-radius:6px; font-weight:700; font-size:0.85rem;">{{ p }}</span>
+          {% else %}
+            <a href="{{ url_for('admin_dashboard', page=p, q=search_q) }}" style="background:#fff; color:var(--text); border:1px solid var(--border); padding:0.35rem 0.75rem; border-radius:6px; font-weight:600; font-size:0.85rem; text-decoration:none;">{{ p }}</a>
+          {% endif %}
+        {% else %}
+          <span style="color:var(--text-muted);">&hellip;</span>
+        {% endif %}
+      {% endfor %}
+      {% if pagination.has_next %}
+        <a href="{{ url_for('admin_dashboard', page=pagination.next_num, q=search_q) }}" class="btn btn-secondary btn-sm" style="padding:0.35rem 0.75rem;">Next &raquo;</a>
+      {% endif %}
+      <span style="font-size:0.82rem; color:var(--text-muted); margin-left:0.5rem;">
+        Page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} members)
+      </span>
+    </div>
+    {% endif %}
   </div>
 {% endif %}
 {% endblock %}
