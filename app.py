@@ -449,27 +449,40 @@ def tech_badge_png(slug):
     )
 
 
-def generate_barcode_image(data_to_encode, gap=18):
+def generate_barcode_image(data_to_encode, width_in=3.0, height_in=0.7, dpi=300, gap=None):
     """
-    Renders a Code 128 barcode image with the full encoded link text
-    centered below the bars with a clean, tight gap (default 18px).
-    Returns a PIL Image object.
+    Renders a Code 128 barcode image with exact print dimensions:
+    width = 3.0 inches, height = 0.7 inches (aspect ratio 4.2857 : 1).
+    At 300 DPI, canvas is 900 x 210 pixels with the encoded URL cleanly centered below the bars.
     """
+    total_w = int(width_in * dpi)
+    total_h = int(height_in * dpi)
+
+    bars_h_target = int(total_h * 0.58)
+    text_h_target = int(total_h * 0.23)
+    gap_val = int(total_h * 0.05) if gap is None else min(gap, int(total_h * 0.15))
+    top_margin = int(total_h * 0.04)
+
     code_class = barcode.get_barcode_class("code128")
     bc = code_class(data_to_encode, writer=ImageWriter())
-    buffer = io.BytesIO()
-    # Render barcode bars without text overlapping
-    bc.write(buffer, options={
-        "module_width": 0.55,      # 0.55 mm
-        "module_height": 28.0,     # 28.0 mm
-        "quiet_zone": 8.5,         # 8.5 mm
-        "write_text": False,
+    buf = io.BytesIO()
+    bc.write(buf, options={
+        "module_width": 0.3,
+        "module_height": 15.0,
+        "quiet_zone": 2.0,
+        "write_text": False
     })
-    buffer.seek(0)
-    im_bars = Image.open(buffer)
-    bw, bh = im_bars.size
+    buf.seek(0)
+    raw_bars = Image.open(buf)
 
-    # Find best TrueType font
+    bars_w_target = int(total_w * 0.94)
+    scaled_bars = raw_bars.resize((bars_w_target, bars_h_target), Image.Resampling.NEAREST)
+
+    canvas = Image.new("RGB", (total_w, total_h), "white")
+    bx = (total_w - bars_w_target) // 2
+    by = top_margin
+    canvas.paste(scaled_bars, (bx, by))
+
     font_path = None
     for p in [
         "C:/Windows/Fonts/segoeuib.ttf",
@@ -481,47 +494,28 @@ def generate_barcode_image(data_to_encode, gap=18):
             font_path = p
             break
 
-    draw_temp = ImageDraw.Draw(im_bars)
-    target_tw = bw * 0.88
+    draw = ImageDraw.Draw(canvas)
+    target_tw = int(total_w * 0.94)
     best_font = None
-    best_tw = 0
-    best_th = 0
-    best_bbox = (0, 0, 400, 30)
+    best_bbox = (0, 0, 100, 10)
 
     if font_path:
-        for fs in range(160, 20, -2):
+        for fs in range(int(text_h_target * 1.5), 8, -1):
             f = ImageFont.truetype(font_path, fs)
-            bbox = draw_temp.textbbox((0, 0), data_to_encode, font=f)
+            bbox = draw.textbbox((0, 0), data_to_encode, font=f)
             tw = bbox[2] - bbox[0]
             th = bbox[3] - bbox[1]
-            if tw <= target_tw:
+            if tw <= target_tw and th <= text_h_target:
                 best_font = f
-                best_tw = tw
-                best_th = th
                 best_bbox = bbox
                 break
 
     if not best_font:
         best_font = ImageFont.load_default()
-        best_tw, best_th = 400, 30
-        best_bbox = (0, 0, 400, 30)
 
-    # Locate exact lowest black bar pixel to set a clean, lowered gap
-    lowest_bar_y = bh
-    for y in range(bh - 1, -1, -1):
-        if any(im_bars.getpixel((x, y)) != (255, 255, 255) for x in range(bw)):
-            lowest_bar_y = y
-            break
-
-    ty = lowest_bar_y + gap - best_bbox[1]
-    bottom_pad = max(18, int(best_th * 0.2))
-    total_h = ty + best_bbox[3] + bottom_pad
-
-    canvas = Image.new("RGB", (bw, total_h), "white")
-    canvas.paste(im_bars, (0, 0))
-
-    draw = ImageDraw.Draw(canvas)
-    tx = (bw - best_tw) // 2 - best_bbox[0]
+    tw = best_bbox[2] - best_bbox[0]
+    tx = (total_w - tw) // 2 - best_bbox[0]
+    ty = by + bars_h_target + gap_val - best_bbox[1]
     draw.text((tx, ty), data_to_encode, fill="black", font=best_font)
     return canvas
 
