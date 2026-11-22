@@ -240,8 +240,10 @@
       <a id="btn-dl-svg" href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn"
         style="background:#059669;">QR (Vector SVG)</a>
       <a href="{{ url_for('badge_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#475569;">White Patch (PNG)</a>
-      <a id="btn-dl-bc-png" href="{{ url_for('barcode_png', slug=tshirt.slug, download=1, data='url') }}" class="btn"
+      <a id="btn-dl-bc-png" href="{{ url_for('barcode_png', slug=tshirt.slug, download=1, data='url', font_size=18) }}" class="btn"
         style="background:#4338ca;">Barcode (PNG)</a>
+      <a id="btn-dl-bc-svg" href="{{ url_for('barcode_svg', slug=tshirt.slug, download=1, data='url', font_size=18) }}" class="btn"
+        style="background:#7c3aed;">Barcode (Vector SVG)</a>
     </div>
   </div>
 
@@ -263,7 +265,7 @@
           </div>
           <div style="flex:1; border-left:2px solid #475569; padding-left:1.15rem;">
             <div style="font-size:0.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Member Page Link</div>
-            <div style="font-family:monospace; font-size:0.92rem; font-weight:700; color:#ffffff; word-break:break-all; margin-top:0.2rem;">
+            <div style="font-family:monospace; font-size:1.15rem; font-weight:800; color:#ffffff; word-break:break-all; margin-top:0.25rem; line-height:1.25;">
               {{ target_url }}</div>
             <div style="font-size:0.85rem; font-weight:700; color:#cbd5e1; text-transform:uppercase; margin-top:0.35rem;">
               {{ tshirt.slug }}</div>
@@ -312,7 +314,7 @@
 
       <div class="code-box barcode-frame" id="box-barcode">
         <div class="code-title">1D Code 128 Barcode (Encodes Member Page Link)</div>
-        <img id="barcode-img" src="{{ url_for('barcode_png', slug=tshirt.slug, data='url') }}" alt="Barcode">
+        <img id="barcode-img" src="{{ url_for('barcode_png', slug=tshirt.slug, data='url', font_size=18) }}" alt="Barcode">
       </div>
     </div>
 
@@ -328,6 +330,7 @@
       <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
       <div><strong>Barcode Encoded Data:</strong> Member Page Link ({{ target_url }})</div>
+      <div><strong>Barcode Text Size:</strong> 18 pt (High-legibility apparel typography)</div>
       <div><strong>T-Shirt Barcode Slot (3.44:1):</strong> 60 mm × 18 mm (High-contrast tech module)</div>
       <div><strong>Full-Width Square QR:</strong> 55 mm × 55 mm (Matches LEGACY word width)</div>
       <div><strong>Horizontal ID Patch (2.5:1):</strong> 100 mm × 40 mm (Chest / Sleeve badge)</div>
@@ -335,6 +338,7 @@
       <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
       <div><strong>Barcode Overall Width:</strong> 75 mm – 100 mm (3.0 – 4.0 in fabric stretch buffer)</div>
       <div><strong>Barcode Bar Height:</strong> 28.0 mm (1.10 in crease/fold reading tolerance)</div>
+      <div><strong>Barcode Quiet Zone:</strong> 8.5 mm (0.33 in solid margins on both ends)</div>
       <div><strong>Barcode Quiet Zone:</strong> 8.5 mm (0.33 in solid margins on both ends)</div>
     </div>
   </div>
