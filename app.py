@@ -113,26 +113,29 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
 }
 
-# Public base domain/URL (crucial for encoding absolute URLs in printable QR codes)
+# Public base domain/URL (crucial for encoding absolute URLs in printable QR and Barcodes)
+DEFAULT_PRODUCTION_URL = "https://dynamic-qr-tp0k.onrender.com"
 app.config["BASE_URL"] = (
     os.environ.get("BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
-    or "http://127.0.0.1:5000"
+    or DEFAULT_PRODUCTION_URL
 ).rstrip("/")
 
 
 def get_base_url():
-    """Finds the effective public base URL, dynamically preferring request.host_url when available."""
+    """Finds the effective public base URL for printable QR and barcode codes."""
     if os.environ.get("BASE_URL"):
         return os.environ.get("BASE_URL").rstrip("/")
     if os.environ.get("RENDER_EXTERNAL_URL"):
         return os.environ.get("RENDER_EXTERNAL_URL").rstrip("/")
     try:
         if has_request_context() and request.host_url:
-            return request.host_url.rstrip("/")
+            host = request.host_url.rstrip("/")
+            if not ("127.0.0.1" in host or "localhost" in host):
+                return host
     except Exception:
         pass
-    return app.config.get("BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+    return DEFAULT_PRODUCTION_URL
 
 # Admin dashboard password
 app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin123")
