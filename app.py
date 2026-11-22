@@ -288,7 +288,7 @@ def qr_svg(slug):
 @app.route("/t/<slug>/badge.png")
 def badge_png(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
-    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    target_url = f"{get_base_url()}/t/{tshirt.slug}"
 
     if not HAS_QRCODE or not HAS_PIL:
         return "qrcode or Pillow library missing", 500
@@ -370,7 +370,7 @@ def badge_png(slug):
 @app.route("/t/<slug>/tech-badge.png")
 def tech_badge_png(slug):
     tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
-    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    target_url = f"{get_base_url()}/t/{tshirt.slug}"
 
     if not HAS_QRCODE or not HAS_PIL:
         return "qrcode or Pillow library missing", 500
@@ -448,7 +448,7 @@ def barcode_png(slug):
         data_to_encode = tshirt.id or tshirt.slug
     else:
         # Default: Link to their member details page
-        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+        data_to_encode = f"{get_base_url()}/t/{tshirt.slug}"
 
     try:
         code_class = barcode.get_barcode_class("code128")
@@ -550,7 +550,7 @@ def barcode_svg(slug):
         data_to_encode = tshirt.id or tshirt.slug
     else:
         # Default: Link to their member details page
-        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+        data_to_encode = f"{get_base_url()}/t/{tshirt.slug}"
 
     try:
         code_class = barcode.get_barcode_class("code128")
@@ -739,8 +739,51 @@ def admin_delete_tshirt(id):
 @login_required
 def admin_print_card(id):
     tshirt = TShirt.query.get_or_404(id)
-    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+    target_url = f"{get_base_url()}/t/{tshirt.slug}"
     return render_template("print_card.html", tshirt=tshirt, target_url=target_url)
+
+
+@app.route("/admin/sync-roster", methods=["GET", "POST"])
+@login_required
+def admin_sync_roster():
+    try:
+        from roster_data import seed_roster_into_db
+        created, updated = seed_roster_into_db(db, TShirt, generate_unique_tshirt_id)
+        flash(f"Successfully synced roster with database! ({created} created, {updated} updated — 165 members active)", "success")
+    except Exception as e:
+        flash(f"Sync error: {e}", "danger")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/download-all-qrs")
+@login_required
+def admin_download_all_qrs():
+    import zipfile
+    base_url = get_base_url()
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        for t in TShirt.query.order_by(TShirt.member_name).all():
+            target_url = f"{base_url}/t/{t.slug}"
+            qr = qrcode.QRCode(
+                version=None,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,
+                box_size=10,
+                border=2,
+            )
+            qr.add_data(target_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+            img_io = io.BytesIO()
+            img.save(img_io, format="PNG")
+            img_io.seek(0)
+            z.writestr(f"{t.slug}_qr.png", img_io.getvalue())
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="all_member_qr_codes.zip",
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -783,23 +826,14 @@ with app.app_context():
         print(f"GlobalBroadcast bootstrap note: {e}", flush=True)
 
     try:
-        # Initialize demo member T-shirt if empty
-        if not TShirt.query.first():
-            demo_member = TShirt(
-                id="25BCON1655",
-                member_name="Aditya Falor",
-                member_role="Member",
-                slug="Mythical_Ace",
-                member_message="Committed to github!!",
-                member_phone="+91 9163487717",
-                member_email="adityafalor79@gmail.com",
-                accent_color="#2563eb",
-            )
-            db.session.add(demo_member)
-            db.session.commit()
+        from roster_data import seed_roster_into_db
+        # Automatically ensure all 165 members are populated in deployed database (Render/Postgres/SQLite)
+        if TShirt.query.count() < 165:
+            created, updated = seed_roster_into_db(db, TShirt, generate_unique_tshirt_id)
+            print(f"Roster bootstrap complete: {created} created, {updated} updated.", flush=True)
     except Exception as e:
         db.session.rollback()
-        print(f"TShirt bootstrap note: {e}", flush=True)
+        print(f"Roster bootstrap note: {e}", flush=True)
 
 
 if __name__ == "__main__":
