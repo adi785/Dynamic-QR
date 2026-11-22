@@ -467,6 +467,7 @@ def barcode_png(slug):
         best_font = None
         best_tw = 0
         best_th = 0
+        best_bbox = (0, 0, 400, 30)
 
         if font_path:
             for fs in range(160, 20, -2):
@@ -478,22 +479,32 @@ def barcode_png(slug):
                     best_font = f
                     best_tw = tw
                     best_th = th
+                    best_bbox = bbox
                     break
 
         if not best_font:
             best_font = ImageFont.load_default()
             best_tw, best_th = 400, 30
+            best_bbox = (0, 0, 400, 30)
 
-        gap = max(35, int(best_th * 0.35))
-        bottom_pad = max(35, int(best_th * 0.35))
-        extra_h = gap + best_th + bottom_pad
+        # Locate exact lowest black bar pixel to set a clean, lowered gap
+        lowest_bar_y = bh
+        for y in range(bh - 1, -1, -1):
+            if any(im_bars.getpixel((x, y)) != (255, 255, 255) for x in range(bw)):
+                lowest_bar_y = y
+                break
 
-        canvas = Image.new("RGB", (bw, bh + extra_h), "white")
+        # Lowered, tight gap between barcode bars and text (default 18px)
+        desired_gap = max(8, min(60, request.args.get("gap", 18, type=int)))
+        ty = lowest_bar_y + desired_gap - best_bbox[1]
+        bottom_pad = max(18, int(best_th * 0.2))
+        total_h = ty + best_bbox[3] + bottom_pad
+
+        canvas = Image.new("RGB", (bw, total_h), "white")
         canvas.paste(im_bars, (0, 0))
 
         draw = ImageDraw.Draw(canvas)
-        tx = (bw - best_tw) // 2
-        ty = bh + gap
+        tx = (bw - best_tw) // 2 - best_bbox[0]
         draw.text((tx, ty), data_to_encode, fill="black", font=best_font)
 
         out_buffer = io.BytesIO()
