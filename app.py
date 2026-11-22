@@ -114,7 +114,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 # Public base domain/URL (crucial for encoding absolute URLs in printable QR and Barcodes)
-DEFAULT_PRODUCTION_URL = "https://dynamic-qr-tp0k.onrender.com"
+DEFAULT_PRODUCTION_URL = "https://dynamic-qr-fp0k.onrender.com"
 app.config["BASE_URL"] = (
     os.environ.get("BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
