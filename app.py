@@ -41,9 +41,12 @@ from flask import (
 try:
     import qrcode
     import qrcode.image.svg
+    from PIL import Image, ImageDraw, ImageFont
     HAS_QRCODE = True
+    HAS_PIL = True
 except ImportError:
     HAS_QRCODE = False
+    HAS_PIL = False
 
 # Optional Barcode library with PIL and SVG writers
 try:
@@ -261,6 +264,88 @@ def qr_svg(slug):
     if download:
         resp.headers["Content-Disposition"] = f'attachment; filename="{tshirt.slug}-vector.svg"'
     return resp
+
+
+@app.route("/t/<slug>/badge.png")
+def badge_png(slug):
+    tshirt = TShirt.query.filter_by(slug=slug).first_or_404()
+    target_url = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
+
+    if not HAS_QRCODE or not HAS_PIL:
+        return "qrcode or Pillow library missing", 500
+
+    # High-resolution scannable QR Code
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(target_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    qr_size = 350
+    qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
+
+    # Canvas dimensions: 1100 x 440 (2.5 : 1 horizontal rectangular aspect ratio)
+    width, height = 1100, 440
+    badge = Image.new("RGB", (width, height), color="white")
+    draw = ImageDraw.Draw(badge)
+    accent_col = tshirt.accent_color or "#2563eb"
+
+    # Cross-platform fonts
+    font_brand = font_name = font_role = font_id = font_cta = None
+    for p in [
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    ]:
+        if os.path.exists(p):
+            try:
+                font_brand = ImageFont.truetype(p, 24)
+                font_name = ImageFont.truetype(p, 44)
+                font_role = ImageFont.truetype(p, 28)
+                font_id = ImageFont.truetype(p, 24)
+                font_cta = ImageFont.truetype(p, 22)
+                break
+            except Exception:
+                pass
+    if not font_brand:
+        font_brand = font_name = font_role = font_id = font_cta = ImageFont.load_default()
+
+    # Outer rounded border
+    draw.rounded_rectangle([12, 12, width - 12, height - 12], radius=24, outline="#0f172a", width=5)
+    # Colored top accent strip
+    draw.rounded_rectangle([12, 12, width - 12, 26], radius=6, fill=accent_col)
+
+    # Paste QR Code on left
+    badge.paste(qr_img, (45, 45))
+
+    # Vertical divider line
+    draw.line([(430, 48), (430, 392)], fill="#cbd5e1", width=3)
+
+    # Member information on right
+    draw.text((465, 55), "JU MAKERSPACE - OFFICIAL APPAREL", fill=accent_col, font=font_brand)
+    draw.text((465, 105), tshirt.member_name, fill="#0f172a", font=font_name)
+    draw.text((465, 180), f"Role: {tshirt.member_role}", fill="#475569", font=font_role)
+    draw.text((465, 235), f"Member ID: {tshirt.id}", fill="#64748b", font=font_id)
+
+    # Call to action
+    draw.rounded_rectangle([465, 305, 1045, 380], radius=12, fill="#f1f5f9", outline="#cbd5e1", width=2)
+    draw.text((490, 328), "Scan 2D Code to View Live Profile & Notices", fill="#1d4ed8", font=font_cta)
+
+    buffer = io.BytesIO()
+    badge.save(buffer, format="PNG", dpi=(300, 300))
+    buffer.seek(0)
+
+    download = request.args.get("download", "0") == "1"
+    return send_file(
+        buffer,
+        mimetype="image/png",
+        as_attachment=download,
+        download_name=f"{tshirt.slug}-rectangular-badge-300dpi.png",
+    )
 
 
 @app.route("/t/<slug>/barcode.png")

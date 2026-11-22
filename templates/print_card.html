@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -63,8 +63,9 @@
   <div class="no-print" style="max-width:720px; margin:0 auto 1.5rem; text-align:center;">
     <!-- View Toggle Modes -->
     <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
-      <button class="view-toggle-btn active" id="btn-both" onclick="setMode('both')">Both (QR + Barcode)</button>
-      <button class="view-toggle-btn" id="btn-qr" onclick="setMode('qr')">QR Code Only</button>
+      <button class="view-toggle-btn active" id="btn-all" onclick="setMode('all')">All Formats (Patch + QR + Barcode)</button>
+      <button class="view-toggle-btn" id="btn-patch" onclick="setMode('patch')">Horizontal Rectangular Patch</button>
+      <button class="view-toggle-btn" id="btn-qr" onclick="setMode('qr')">Square QR Only</button>
       <button class="view-toggle-btn" id="btn-barcode" onclick="setMode('barcode')">Barcode Only</button>
     </div>
 
@@ -87,6 +88,7 @@
     <!-- Action & Download Buttons -->
     <div style="display:flex; justify-content:center; gap:0.4rem; flex-wrap:wrap;">
       <button class="btn" onclick="window.print()">🖨️ Print Spec Sheet</button>
+      <a href="{{ url_for('badge_png', slug=tshirt.slug, download=1) }}" class="btn" style="background:#1e293b;">Patch (PNG)</a>
       <a id="btn-dl-png" href="{{ url_for('qr_png', slug=tshirt.slug, download=1, size=1000) }}" class="btn" style="background:#0f172a;">QR (PNG)</a>
       <a id="btn-dl-svg" href="{{ url_for('qr_svg', slug=tshirt.slug, download=1) }}" class="btn" style="background:#059669;">QR (Vector SVG)</a>
       <a id="btn-dl-bc-png" href="{{ url_for('barcode_png', slug=tshirt.slug, download=1, data='id') }}" class="btn" style="background:#4338ca;">Barcode (PNG)</a>
@@ -100,6 +102,25 @@
     <p style="color:#64748b; font-size:1rem; margin-top:0.25rem;">{{ tshirt.member_role }} &mdash; Permanent Apparel Identification</p>
 
     <div class="codes-container" id="codes-wrap">
+      <!-- Horizontal Rectangular Apparel Patch/Badge -->
+      <div class="code-box" id="box-patch" style="width:100%; max-width:560px; padding:1.25rem;">
+        <div class="code-title">Horizontal Rectangular Apparel Patch (2.5 : 1 Ratio)</div>
+        <div style="display:flex; align-items:center; background:#ffffff; border:2px solid #0f172a; border-top:5px solid var(--accent); border-radius:14px; padding:0.9rem 1.15rem; gap:1.15rem; box-shadow:0 6px 18px rgba(0,0,0,0.06); text-align:left; width:100%;">
+          <div style="flex-shrink:0;">
+            <img src="{{ url_for('qr_png', slug=tshirt.slug, size=400) }}" alt="QR Code" style="width:115px; height:115px; display:block; border-radius:4px;">
+          </div>
+          <div style="flex:1; border-left:2px dashed #cbd5e1; padding-left:1.15rem;">
+            <div style="font-size:0.72rem; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.25rem;">JU Makerspace Official</div>
+            <div style="font-size:1.35rem; font-weight:800; color:#0f172a; line-height:1.2;">{{ tshirt.member_name }}</div>
+            <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-top:0.25rem;">{{ tshirt.member_role }}</div>
+            <div style="font-family:monospace; font-size:0.8rem; color:#64748b; margin-top:0.35rem;">ID: {{ tshirt.id }}</div>
+            <div style="margin-top:0.55rem; font-size:0.72rem; font-weight:700; color:#1d4ed8; background:#eff6ff; border:1px solid #bfdbfe; padding:0.25rem 0.65rem; border-radius:6px; display:inline-block;">
+              📱 Scan with any phone camera
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="code-box qr-frame" id="box-qr">
         <div class="code-title">2D Dynamic QR Code</div>
         <img id="qr-img" src="{{ url_for('qr_png', slug=tshirt.slug, size=1000) }}" alt="QR Code" style="width:220px; height:220px;">
@@ -119,7 +140,8 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; text-align:left; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0; font-size:0.83rem; line-height:1.55;">
       <div><strong>Member ID:</strong> {{ tshirt.id }}</div>
       <div><strong>Member Slug:</strong> {{ tshirt.slug }}</div>
-      <div><strong>QR Print Dimension:</strong> <span id="qr-dimension-spec">220 × 220 px (~5.8 × 5.8 cm)</span></div>
+      <div><strong>Rectangular Patch Dimension:</strong> 100 mm × 40 mm (2.5 : 1 horizontal chest ratio)</div>
+      <div><strong>Square QR Dimension:</strong> <span id="qr-dimension-spec">220 × 220 px (~5.8 × 5.8 cm)</span></div>
       <div><strong>QR Error Recovery:</strong> Level H (30% Fabric Damage Tolerance)</div>
       <div><strong>Barcode Standard:</strong> Code 128 (Universal 1D/2D scanner compliant)</div>
       <div><strong>Barcode Overall Width:</strong> 75 mm – 100 mm (3.0 – 4.0 in fabric stretch buffer)</div>
@@ -131,26 +153,37 @@
 
   <script>
     function setMode(mode) {
+      const patchBox = document.getElementById('box-patch');
       const qrBox = document.getElementById('box-qr');
       const bcBox = document.getElementById('box-barcode');
       const qrToolbar = document.getElementById('qr-size-toolbar');
-      const btnBoth = document.getElementById('btn-both');
+      const btnAll = document.getElementById('btn-all');
+      const btnPatch = document.getElementById('btn-patch');
       const btnQr = document.getElementById('btn-qr');
       const btnBc = document.getElementById('btn-barcode');
 
-      [btnBoth, btnQr, btnBc].forEach(b => b.classList.remove('active'));
+      [btnAll, btnPatch, btnQr, btnBc].forEach(b => { if (b) b.classList.remove('active'); });
 
-      if (mode === 'both') {
+      if (mode === 'all') {
+        patchBox.classList.remove('hidden');
         qrBox.classList.remove('hidden');
         bcBox.classList.remove('hidden');
-        btnBoth.classList.add('active');
+        btnAll.classList.add('active');
         if (qrToolbar) qrToolbar.style.display = 'block';
+      } else if (mode === 'patch') {
+        patchBox.classList.remove('hidden');
+        qrBox.classList.add('hidden');
+        bcBox.classList.add('hidden');
+        btnPatch.classList.add('active');
+        if (qrToolbar) qrToolbar.style.display = 'none';
       } else if (mode === 'qr') {
+        patchBox.classList.add('hidden');
         qrBox.classList.remove('hidden');
         bcBox.classList.add('hidden');
         btnQr.classList.add('active');
         if (qrToolbar) qrToolbar.style.display = 'block';
       } else if (mode === 'barcode') {
+        patchBox.classList.add('hidden');
         qrBox.classList.add('hidden');
         bcBox.classList.remove('hidden');
         btnBc.classList.add('active');
