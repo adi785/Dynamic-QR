@@ -810,7 +810,7 @@ def admin_sync_roster():
 @app.route("/admin/download-all-qrs")
 @login_required
 def admin_download_all_qrs():
-    # If static zip exists, stream directly with 0ms CPU load
+    # If pre-packaged static zip exists, stream directly with 0ms CPU load
     zip_path = os.path.join(app.root_path, "static", "all_member_qr_codes.zip")
     if os.path.exists(zip_path):
         return send_file(
@@ -819,39 +819,13 @@ def admin_download_all_qrs():
             as_attachment=True,
             download_name="all_member_qr_codes.zip",
         )
-
-    import zipfile
-    base_url = get_base_url()
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as z:
-        for t in TShirt.query.order_by(TShirt.member_name).all():
-            target_url = f"{base_url}/t/{t.slug}"
-            qr = qrcode.QRCode(
-                version=None,
-                error_correction=qrcode.constants.ERROR_CORRECT_H,
-                box_size=10,
-                border=2,
-            )
-            qr.add_data(target_url)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-            img_io = io.BytesIO()
-            img.save(img_io, format="PNG")
-            img_io.seek(0)
-            z.writestr(f"{t.slug}_qr.png", img_io.getvalue())
-    zip_buffer.seek(0)
-    return send_file(
-        zip_buffer,
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name="all_member_qr_codes.zip",
-    )
+    return redirect(url_for("static", filename="all_member_qr_codes.zip"))
 
 
 @app.route("/admin/download-all-barcodes")
 @login_required
 def admin_download_all_barcodes():
-    # If static zip exists, stream directly with 0ms CPU load
+    # If pre-packaged static zip exists, stream directly with 0ms CPU load
     zip_path = os.path.join(app.root_path, "static", "all_member_barcodes.zip")
     if os.path.exists(zip_path):
         return send_file(
@@ -860,32 +834,7 @@ def admin_download_all_barcodes():
             as_attachment=True,
             download_name="all_member_barcodes.zip",
         )
-
-    if not HAS_BARCODE:
-        return "python-barcode library missing. Please install python-barcode", 500
-
-    import zipfile
-    base_url = get_base_url()
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as z:
-        for t in TShirt.query.order_by(TShirt.member_name).all():
-            target_url = f"{base_url}/t/{t.slug}"
-            try:
-                canvas = generate_barcode_image(target_url, gap=18)
-                img_io = io.BytesIO()
-                canvas.save(img_io, format="PNG", dpi=(300, 300))
-                img_io.seek(0)
-                z.writestr(f"{t.slug}_barcode.png", img_io.getvalue())
-            except Exception as e:
-                print(f"Error rendering barcode for {t.slug}: {e}")
-
-    zip_buffer.seek(0)
-    return send_file(
-        zip_buffer,
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name="all_member_barcodes.zip",
-    )
+    return redirect(url_for("static", filename="all_member_barcodes.zip"))
 
 
 # -----------------------------------------------------------------------------

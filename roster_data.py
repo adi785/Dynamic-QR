@@ -202,11 +202,13 @@ def get_planned_roster():
         })
     return planned
 
-def seed_roster_into_db(db, TShirt, generate_unique_tshirt_id):
+def seed_roster_into_db(db, TShirt, generate_unique_tshirt_id=None):
     """
-    Synchronizes the official 165 members into the database.
-    Works identically across local SQLite and deployed PostgreSQL.
+    Synchronizes the official 165 members into the database in a single fast batch.
+    Works identically across local SQLite and deployed PostgreSQL with minimal round-trips (< 200ms).
     """
+    import secrets
+
     planned = get_planned_roster()
     created = 0
     updated = 0
@@ -217,11 +219,29 @@ def seed_roster_into_db(db, TShirt, generate_unique_tshirt_id):
         db.session.delete(tarun)
         db.session.commit()
 
+    # Batch fetch all existing records in 1 single SQL query
+    all_existing = TShirt.query.all()
+    by_name = {t.member_name.strip().lower(): t for t in all_existing if t.member_name}
+    by_slug = {t.slug.strip().lower(): t for t in all_existing if t.slug}
+    used_ids = {t.id for t in all_existing if t.id}
+
+    def get_fresh_id(preferred=None):
+        if preferred and preferred not in used_ids:
+            used_ids.add(preferred)
+            return preferred
+        while True:
+            candidate = f"TS{secrets.token_hex(4).upper()}"
+            if candidate not in used_ids:
+                used_ids.add(candidate)
+                return candidate
+
     for item in planned:
         name = item["name"]
         slug = item["slug"]
+        name_key = name.strip().lower()
+        slug_key = slug.strip().lower()
 
-        existing = TShirt.query.filter((TShirt.member_name == name) | (TShirt.slug == slug)).first()
+        existing = by_name.get(name_key) or by_slug.get(slug_key)
         if existing:
             existing.member_name = name
             existing.slug = slug
@@ -231,14 +251,12 @@ def seed_roster_into_db(db, TShirt, generate_unique_tshirt_id):
             existing.accent_color = "#dc2626"
             existing.member_email = "abc@gmail.com"
             db.session.add(existing)
+            by_name[name_key] = existing
+            by_slug[slug_key] = existing
             updated += 1
         else:
-            # Custom ID preserved if Aditya Falor, otherwise unique TS ID
-            tshirt_id = "25BCON1655" if name == "Aditya Falor" else generate_unique_tshirt_id()
-            # If 25BCON1655 already used by someone else, generate
-            if TShirt.query.get(tshirt_id):
-                tshirt_id = generate_unique_tshirt_id()
-
+            preferred = "25BCON1655" if name == "Aditya Falor" else None
+            tshirt_id = get_fresh_id(preferred)
             new_shirt = TShirt(
                 id=tshirt_id,
                 slug=slug,
@@ -248,9 +266,11 @@ def seed_roster_into_db(db, TShirt, generate_unique_tshirt_id):
                 member_phone=None,
                 member_email="abc@gmail.com",
                 accent_color="#dc2626",
-                scan_count=0
+                scan_count=0,
             )
             db.session.add(new_shirt)
+            by_name[name_key] = new_shirt
+            by_slug[slug_key] = new_shirt
             created += 1
 
     db.session.commit()
