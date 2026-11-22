@@ -382,8 +382,8 @@ def tech_badge_png(slug):
     # Divider
     draw.line([(180, 15), (180, 160)], fill=(120, 120, 120, 255), width=2)
 
-    # Cross-platform fonts
-    font_title = font_sub = font_cta = None
+    # Fonts
+    font_title = font_sub = font_link = font_cta = None
     for p in [
         "C:/Windows/Fonts/segoeuib.ttf",
         "C:/Windows/Fonts/arialbd.ttf",
@@ -392,20 +392,22 @@ def tech_badge_png(slug):
     ]:
         if os.path.exists(p):
             try:
-                font_title = ImageFont.truetype(p, 30)
-                font_sub = ImageFont.truetype(p, 22)
-                font_cta = ImageFont.truetype(p, 18)
+                font_title = ImageFont.truetype(p, 26)
+                font_sub = ImageFont.truetype(p, 20)
+                font_link = ImageFont.truetype(p, 19)
+                font_cta = ImageFont.truetype(p, 16)
                 break
             except Exception:
                 pass
     if not font_title:
-        font_title = font_sub = font_cta = ImageFont.load_default()
+        font_title = font_sub = font_link = font_cta = ImageFont.load_default()
 
-    draw.text((195, 20), tshirt.id or tshirt.slug, fill=(255, 255, 255, 255), font=font_title)
-    draw.text((195, 68), (tshirt.slug or "").replace("_", " ").upper(), fill=(180, 180, 180, 255), font=font_sub)
+    draw.text((195, 18), "PAGE LINK:", fill=(148, 163, 184, 255), font=font_cta)
+    draw.text((195, 40), target_url, fill=(255, 255, 255, 255), font=font_link)
+    draw.text((195, 74), (tshirt.slug or "").replace("_", " ").upper(), fill=(203, 213, 225, 255), font=font_title)
     accent = tshirt.accent_color or "#eb5f24"
-    draw.rounded_rectangle([195, 115, 420, 155], radius=6, fill=accent)
-    draw.text((215, 123), "SCAN PROFILE", fill=(255, 255, 255, 255), font=font_cta)
+    draw.rounded_rectangle([195, 118, 420, 156], radius=6, fill=accent)
+    draw.text((215, 126), "SCAN PROFILE", fill=(255, 255, 255, 255), font=font_cta)
 
     buffer = io.BytesIO()
     badge.save(buffer, format="PNG", dpi=(300, 300))
@@ -426,14 +428,14 @@ def barcode_png(slug):
     if not HAS_BARCODE:
         return "python-barcode library missing. Please install python-barcode", 500
 
-    data_type = request.args.get("data", "id").lower()
+    data_type = request.args.get("data", "url").lower()
     if data_type == "slug":
         data_to_encode = tshirt.slug
-    elif data_type == "url":
-        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
-    else:
-        # Default to short member ID (or slug if ID is empty)
+    elif data_type == "id":
         data_to_encode = tshirt.id or tshirt.slug
+    else:
+        # Default: Link to their member page
+        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
     try:
         code_class = barcode.get_barcode_class("code128")
@@ -466,14 +468,14 @@ def barcode_svg(slug):
     if not HAS_BARCODE:
         return "python-barcode library missing. Please install python-barcode", 500
 
-    data_type = request.args.get("data", "id").lower()
+    data_type = request.args.get("data", "url").lower()
     if data_type == "slug":
         data_to_encode = tshirt.slug
-    elif data_type == "url":
-        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
-    else:
-        # Default to short member ID (or slug if ID is empty)
+    elif data_type == "id":
         data_to_encode = tshirt.id or tshirt.slug
+    else:
+        # Default: Link to their member page
+        data_to_encode = f"{app.config['BASE_URL']}/t/{tshirt.slug}"
 
     try:
         code_class = barcode.get_barcode_class("code128")
